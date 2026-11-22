@@ -6,3 +6,12 @@ docs/gamedocs/*
 docs/source/*
 /out
 /vcpkg_installed
+
+# Android / Gradle artifacts
+local.properties
+*.apk
+*.aab
+os/android/build/
+os/android/app/build/
+os/android/.gradle/
+.DS_Store

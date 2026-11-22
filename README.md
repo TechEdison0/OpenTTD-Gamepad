@@ -1,5 +1,84 @@
 # OpenTTD
 
+> **This repository is a fork: "OpenTTD Gamepad".** It adds faithful gamepad
+> support across desktop and Android, plus optional Android dual-screen layouts
+> for handhelds. Upstream docs are kept below unchanged.
+
+![License](https://img.shields.io/badge/license-GPL--2.0-blue)
+![Base](https://img.shields.io/badge/upstream-OpenTTD%2016.x-green)
+
+## About this fork
+
+OpenTTD is mouse-and-keyboard software. This fork makes a controller a first-class
+input method everywhere OpenTTD runs, then builds the Android handheld experience
+on top:
+
+1. **Desktop (Windows / Linux / macOS)** — discover gamepads, normalize input,
+   navigate the UI and play from a controller, without breaking keyboard/mouse.
+   The active input method switches automatically based on what you touch.
+2. **Android, single screen** — real touch interface, plus gamepad and kb/m as
+   supported.
+3. **Android, dual screen (handhelds)** — the entire toolbar lives on the bottom
+   display and the map on the top. Sticks drive the viewport/crosshair on the map;
+   the D-pad drives menu focus on the tools screen. Layout is assembled at startup
+   and re-assembled on dock/undock (a restart prompt is acceptable).
+
+UI behaviour follows controller conventions from Cities: Skylines, Civilization
+and other top-down sandbox/strategy games.
+
+### Features
+
+- Platform-neutral action layer in core (`src/`): discovery → normalization →
+  binding → dispatch, with thin per-platform backends.
+- Focus ring drawn by OpenTTD's own rendering code (scales with zoom).
+- Geometric D-pad navigation (direction, distance, perpendicular offset), reading
+  live widget geometry; disabled/hidden widgets are skipped.
+- Toolbar A/B semantics: A activates, B backs out / closes / cancels a tool.
+- Desktop keyboard/mouse behaviour unchanged when no controller is used.
+
+### Building
+
+Desktop:
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --parallel
+```
+
+Android (JDK 17+, SDK/NDK, CMake ≥ 3.31, Ninja, vcpkg):
+
+```bash
+cd os/android && ./gradlew assembleDebug
+```
+
+See `COMPILING.md`, `os/android/README.md` and `THIRD_PARTY_NOTES.md`.
+
+### Repository layout
+
+| Path | Purpose |
+|---|---|
+| `src/` | engine, including the core gamepad action/focus layer |
+| `src/os/android/` | Android native entry point |
+| `os/android/` | Gradle/NDK/vcpkg Android application project |
+| `android/` | Android layout/region management and dual-screen code |
+| `research/` | design research and verification reports |
+| `upstream-port/` | vendored additive build glue and its provenance |
+
+Upstream is tracked on the `upstream` remote; `main` is the integration branch,
+rebased onto new upstream release tags (never nightlies).
+
+### Roadmap
+
+- [ ] Baseline: build and launch desktop + single-screen Android from this tree
+- [ ] Core input: device model, normalization, bindings, action dispatcher
+- [ ] Controller foundation: focus ring, geometric D-pad, toolbar A/B
+- [ ] Dropdowns, build toolbars, on-screen keyboard under controller focus
+- [ ] Android single-screen touch/gamepad/kb-m parity
+- [ ] Android dual-screen regions and context-sensitive input routing
+- [ ] Device testing, polish, rebase rehearsal
+
+---
+
 ## Table of contents
 
 - 1.0) [About](#10-about)

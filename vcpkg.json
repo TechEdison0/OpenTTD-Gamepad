@@ -22,6 +22,11 @@
       "platform": "linux"
     },
     {
+      "name": "fluidsynth",
+      "platform": "linux | android",
+      "default-features": false
+    },
+    {
       "name": "freetype",
       "platform": "linux | android"
     },

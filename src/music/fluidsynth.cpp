@@ -13,7 +13,16 @@
 
 #include <filesystem>
 #include <fluidsynth.h>
+#include <limits.h>
 #include <mutex>
+
+#if defined(_WIN32)
+#	include <windows.h>
+#elif defined(__APPLE__)
+#	include <mach-o/dyld.h>
+#else
+#	include <unistd.h>
+#endif
 
 #include "../debug.h"
 #include "../mixer.h"
@@ -52,6 +61,43 @@ static const char *_default_soundfonts[] = {
 	"/usr/share/sounds/sf2/TimGM6mb.sf2",
 	"/usr/share/sounds/sf2/FluidR3_GS.sf2",
 };
+
+/** Soundfonts shipped next to the executable, tried before the system ones. */
+static const std::string_view _bundled_soundfonts[] = {
+	"soundfont.sf2",
+	"TimGM6mb.sf2",
+	"FluidR3_GM.sf2",
+};
+
+/**
+ * Directory containing the running executable, or an empty string when it cannot
+ * be determined. Used to find a soundfont bundled with the game.
+ * \note On Android this resolves to the app loader, not the native library; the
+ * Android port passes the extracted soundfont path explicitly instead.
+ */
+static std::string GetExecutableDir()
+{
+	std::string path;
+#if defined(_WIN32)
+	path.resize(MAX_PATH);
+	DWORD len = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
+	if (len == 0 || len >= path.size()) return {};
+	path.resize(len);
+#elif defined(__APPLE__)
+	uint32_t size = 0;
+	_NSGetExecutablePath(nullptr, &size);
+	path.resize(size);
+	if (_NSGetExecutablePath(path.data(), &size) != 0) return {};
+#else
+	path.resize(PATH_MAX);
+	ssize_t len = readlink("/proc/self/exe", path.data(), path.size() - 1);
+	if (len < 0) return {};
+	path.resize(static_cast<size_t>(len));
+#endif
+
+	size_t pos = path.find_last_of("/\\");
+	return pos == std::string::npos ? std::string{} : path.substr(0, pos);
+}
 
 static void RenderMusicStream(int16_t *buffer, size_t samples)
 {
@@ -123,7 +169,18 @@ std::optional<std::string_view> MusicDriver_FluidSynth::Start(const StringList &
 		}
 		fluid_free(default_soundfont);
 
-		/* If no default soundfont found, try our own list. */
+		/* If no default soundfont was found, prefer one bundled next to the game. */
+		if (sfont_id == FLUID_FAILED) {
+			std::string exe_dir = GetExecutableDir();
+			for (const auto &soundfont : _bundled_soundfonts) {
+				std::string path = exe_dir.empty() ? std::string{soundfont} : exe_dir + '/' + std::string{soundfont};
+				if (!std::filesystem::exists(path) || !fluid_is_soundfont(path.c_str())) continue;
+				sfont_id = fluid_synth_sfload(_midi.synth, path.c_str(), 1);
+				if (sfont_id != FLUID_FAILED) break;
+			}
+		}
+
+		/* If still none, try the system-wide list. */
 		if (sfont_id == FLUID_FAILED) {
 			for (const char *soundfont : _default_soundfonts) {
 				if (!std::filesystem::exists(soundfont) || !fluid_is_soundfont(soundfont)) continue;

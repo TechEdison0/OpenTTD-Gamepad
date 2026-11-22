@@ -43,7 +43,12 @@ val releaseKeystore = setting("openttd.keystore", "OPENTTD_KEYSTORE")
 
 val hostToolsDir: File = layout.buildDirectory.dir("host-tools").get().asFile
 val gameDataDir: File = layout.buildDirectory.dir("generated/game-data").get().asFile
-val vcpkgInstalledDir: File = layout.buildDirectory.dir("vcpkg_installed").get().asFile
+/* Some vcpkg ports (OpenSSL's Configure script) split their prefix on spaces, so the
+   default build-dir location fails when the project lives in a path with a space.
+   Redirect the installed tree with vcpkg.installed.dir in local.properties or VCPKG_INSTALLED_DIR. */
+val vcpkgInstalledDir: File = setting("vcpkg.installed.dir", "VCPKG_INSTALLED_DIR")
+    ?.let { File(it) }
+    ?: layout.buildDirectory.dir("vcpkg_installed").get().asFile
 
 android {
     namespace = "org.openttd.android"

@@ -15,6 +15,7 @@ provenance; each component retains its own license.
 |---|---|---|
 | psyycker/openttd-android Gradle/NDK/vcpkg layer | GPL-2.0-only | https://github.com/psyycker/openttd-android @ `9407a7f` |
 | SDL Java/bootstrap classes under `os/android/app/src/main/java/org/libsdl/` | zlib | https://libsdl.org/ |
+| TimGM6mb General-MIDI soundfont (`os/android/app/src/main/assets/soundfont.sf2`, Android only) | GPL-2.0 | Debian package `timgm6mb-soundfont` |
 
 Vendored glue is additive and isolated; see `upstream-port/` for the exact set of
 files and the adaptation notes.

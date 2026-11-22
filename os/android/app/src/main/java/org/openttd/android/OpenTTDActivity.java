@@ -18,6 +18,10 @@ import android.widget.RelativeLayout;
 import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * The game itself. The native code lives in libmain.so (built from the
  * OpenTTD CMake project); SDL's activity takes care of the surface, input,
@@ -56,12 +60,23 @@ public class OpenTTDActivity extends SDLActivity {
     /**
      * Command line arguments for OpenTTD can be passed for debugging, e.g.
      * {@code adb shell am start -n org.openttd.android/.LauncherActivity --es args "-d driver=3"}.
+     * <p>
+     * The bundled General-MIDI soundfont is appended as a driver parameter so the
+     * FluidSynth music driver can load it on Android, where there is no system font.
      */
     @Override
     protected String[] getArguments() {
-        String args = getIntent().getStringExtra(LauncherActivity.EXTRA_ARGS);
-        if (args == null || args.trim().isEmpty()) return new String[0];
-        return args.trim().split("\\s+");
+        List<String> args = new ArrayList<>();
+        String extra = getIntent().getStringExtra(LauncherActivity.EXTRA_ARGS);
+        if (extra != null && !extra.trim().isEmpty()) {
+            Collections.addAll(args, extra.trim().split("\\s+"));
+        }
+        String soundfont = SoundFont.path(this);
+        if (soundfont != null) {
+            args.add("-m");
+            args.add("fluidsynth:soundfont=" + soundfont);
+        }
+        return args.toArray(new String[0]);
     }
 
     /** The app settings dialog, while shown. */

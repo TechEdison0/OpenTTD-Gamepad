@@ -55,6 +55,31 @@ cd os/android && ./gradlew assembleDebug
 
 See `COMPILING.md`, `os/android/README.md` and `THIRD_PARTY_NOTES.md`.
 
+### Runtime dependencies
+
+Only **Linux** needs anything beyond the base system packages: music requires a
+General-MIDI synthesizer, and OpenTTD's `fluidsynth` driver also needs a GM
+soundfont. Sound effects work without either.
+
+| Debian/Ubuntu package | Purpose |
+|---|---|
+| `libfluidsynth3` | FluidSynth software synthesizer (runtime) |
+| `timgm6mb-soundfont` (or `fluid-soundfont-gm`) | General-MIDI soundfont |
+
+```bash
+sudo apt install libfluidsynth3 timgm6mb-soundfont
+```
+
+Building from source additionally needs `libfluidsynth-dev`; CMake detects it
+automatically when present. Without it the build falls back to `extmidi` (which
+shells out to an external player such as `timidity`) or to silence.
+
+The other platforms need nothing extra:
+
+- **Windows** — uses the OS MIDI mapper (`win32_midi`) and DirectMusic.
+- **macOS** — uses CoreAudio's built-in synthesizer (`cocoa_midi`).
+- **Android** — compiles FluidSynth natively and ships a soundfont inside the APK.
+
 ### Repository layout
 
 | Path | Purpose |

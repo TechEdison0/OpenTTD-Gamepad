@@ -23,7 +23,7 @@
     },
     {
       "name": "fluidsynth",
-      "platform": "linux | android",
+      "platform": "android",
       "default-features": false
     },
     {

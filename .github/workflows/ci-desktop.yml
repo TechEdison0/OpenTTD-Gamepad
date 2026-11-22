@@ -1,0 +1,69 @@
+name: CI - Desktop
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: 1
+
+jobs:
+  linux:
+    name: Linux (GCC)
+    runs-on: ubuntu-latest
+    env:
+      CC: gcc
+      CXX: g++
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install dependencies
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          liballegro4-dev \
+          libcurl4-openssl-dev \
+          libfontconfig-dev \
+          libharfbuzz-dev \
+          libicu-dev \
+          liblzma-dev \
+          liblzo2-dev \
+          libogg-dev \
+          libopus-dev \
+          libopusfile-dev \
+          libsoxr-dev \
+          libsdl2-dev \
+          zlib1g-dev
+
+    - name: Setup vcpkg (breakpad only)
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git "${RUNNER_TEMP}/vcpkg"
+        "${RUNNER_TEMP}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+        # Use system libraries; only breakpad comes from vcpkg.
+        mv vcpkg.json vcpkg-disabled.json
+        "${RUNNER_TEMP}/vcpkg/vcpkg" install breakpad
+
+    - name: Build
+      run: |
+        cmake -B build \
+          -DCMAKE_TOOLCHAIN_FILE="${RUNNER_TEMP}/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        cmake --build build -j "$(nproc)"
+
+    - name: Test
+      run: ctest --test-dir build -j "$(nproc)" --timeout 120

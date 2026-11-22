@@ -1,0 +1,82 @@
+name: CI - Android
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: 29.0.14206865
+  # vcpkg tool checkout; the registry baselines in vcpkg.json must be in its history.
+  VCPKG_COMMIT: 65514b43a035548911e1789071785a9827470cdc
+
+jobs:
+  android:
+    name: Android APK (arm64)
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        # The Android version code is the number of commits.
+        fetch-depth: 0
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 21
+
+    - name: Install build tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ninja-build autoconf autoconf-archive automake libtool
+        yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+          "ndk;${NDK_VERSION}" "platforms;android-36" "cmake;3.31.6" > /dev/null
+
+    - name: Set up vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git "${RUNNER_TEMP}/vcpkg"
+        git -C "${RUNNER_TEMP}/vcpkg" checkout "${VCPKG_COMMIT}"
+        "${RUNNER_TEMP}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+
+    - name: Cache vcpkg packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/vcpkg/archives
+        key: vcpkg-android-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
+        restore-keys: |
+          vcpkg-android-${{ env.VCPKG_COMMIT }}-
+          vcpkg-android-
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Configure
+      run: |
+        cat > os/android/local.properties <<EOF
+        sdk.dir=${ANDROID_HOME}
+        cmake.dir=${ANDROID_HOME}/cmake/3.31.6
+        vcpkg.root=${RUNNER_TEMP}/vcpkg
+        EOF
+
+    - name: Build
+      working-directory: os/android
+      run: ./gradlew assembleDebug --console=plain
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: openttd-android-debug
+        path: os/android/app/build/outputs/apk/debug/*.apk
+        if-no-files-found: error

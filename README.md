@@ -6,6 +6,8 @@
 
 ![License](https://img.shields.io/badge/license-GPL--2.0-blue)
 ![Base](https://img.shields.io/badge/upstream-OpenTTD%2016.x-green)
+[![Desktop build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml/badge.svg)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml)
+[![Android build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml/badge.svg)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml)
 
 ## About this fork
 

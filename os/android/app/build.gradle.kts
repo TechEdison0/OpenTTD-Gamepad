@@ -113,6 +113,7 @@ android {
 
     externalNativeBuild {
         cmake {
+            version = "3.31.6"
             path = openttdRoot.resolve("CMakeLists.txt")
         }
     }

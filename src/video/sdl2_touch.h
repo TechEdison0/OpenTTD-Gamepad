@@ -12,6 +12,10 @@
 
 #include <SDL.h>
 
+#include <chrono>
+#include <cstdint>
+#include <vector>
+
 /**
  * Turns a touch screen into a laptop-style trackpad driving the mouse cursor,
  * so the desktop interface can be used as-is:

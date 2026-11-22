@@ -33,7 +33,14 @@ git -C vendor/psyycker diff --binary 07b339c0aa HEAD > upstream-port/psyycker-rc
   landing page and release automation).
 - Rewrote `os/android/README.md` for this fork (branch model, releases).
 - Kept `LICENSE` (GPL-2.0 text); the engine remains GPL-2.0 under `COPYING.md`.
-- Everything else is applied verbatim.
+- Added explicit `<chrono>`, `<cstdint>` and `<vector>` includes to
+  `src/video/sdl2_touch.h`; the donor relied on transitive includes that this
+  tree does not provide (Linux build failed on `Clock`/`std::vector`).
+- Pinned the Android CMake to the SDK package `cmake;3.31.6`
+  (`os/android/app/build.gradle.kts`) so the host's `/usr/bin/cmake` cannot shadow
+  it; documented `cmake.dir` accordingly.
+- Everything else was applied verbatim; later local fixes are listed here as they
+  are made.
 
 ## What the patch touches
 

@@ -15,6 +15,7 @@
 #include "window_gui.h"
 #include "window_func.h"
 #include "gfx_func.h"
+#include "palette_func.h"
 
 #include <deque>
 #include <mutex>

@@ -142,6 +142,16 @@ endif()
 if(NOT OPTION_DEDICATED)
     if(WIN32)
         find_package(Xaudio2)
+        # FluidSynth is not a Windows component; this fork bundles it via vcpkg so the
+        # music plays even where the OS has no MIDI synthesizer. Prefer its CMake
+        # config package, and fall back to the Find module (pkg-config based).
+        find_package(FluidSynth CONFIG QUIET)
+        if(FluidSynth_FOUND)
+            set(Fluidsynth_FOUND TRUE)
+            set(Fluidsynth_LIBRARIES FluidSynth::libfluidsynth)
+        else()
+            find_package(Fluidsynth)
+        endif()
     else()
         find_package(Allegro)
         if(NOT APPLE)

@@ -105,6 +105,14 @@ private:
 	float joystick_rest_y = 0; ///< Sub-pixel remainder of scrolling with the joystick.
 #endif
 
+	/** C0 gamepad probe: raw controller diagnostics. Temporary scaffolding. */
+	void StartGamepadProbe();
+	void StopGamepadProbe();
+	static int SDLCALL GamepadProbeEventFilter(void *userdata, SDL_Event *event);
+
+	bool gamepad_probe_started = false;
+	bool gamepad_probe_verbose = false;
+
 #ifdef __EMSCRIPTEN__
 	/* Convert a constant pointer back to a non-constant pointer to a member function. */
 	static void EmscriptenLoop(void *self) { ((VideoDriver_SDL_Base *)self)->LoopOnce(); }

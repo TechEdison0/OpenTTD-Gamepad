@@ -644,6 +644,99 @@ static std::optional<std::string_view> InitializeSDL()
 }
 
 /**
+ * Whether raw controller events should be logged. This is noisy, so it is opt-in via
+ * the environment for as long as the probe exists.
+ */
+static bool _gamepad_probe_verbose = std::getenv("OPENTTD_GAMEPAD_DEBUG") != nullptr;
+
+void VideoDriver_SDL_Base::StartGamepadProbe()
+{
+	if (this->gamepad_probe_started) return;
+	this->gamepad_probe_started = true;
+	this->gamepad_probe_verbose = _gamepad_probe_verbose;
+
+	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0 && SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
+		Debug(Facility::Driver, Severity::Warning, "Gamepad probe: controller support unavailable: {}", SDL_GetError());
+		return;
+	}
+	/* The game-controller mapping database is optional; raw joystick events suffice. */
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0) SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
+
+	int count = SDL_NumJoysticks();
+	Debug(Facility::Driver, Severity::Critical, "Gamepad probe: {} controller(s) connected", count);
+	for (int i = 0; i < count; i++) {
+		const char *name = SDL_IsGameController(i) ? SDL_GameControllerNameForIndex(i) : SDL_JoystickNameForIndex(i);
+		int axes = 0;
+		int buttons = 0;
+		int hats = 0;
+		SDL_Joystick *joystick = SDL_JoystickOpen(i);
+		if (joystick != nullptr) {
+			axes = SDL_JoystickNumAxes(joystick);
+			buttons = SDL_JoystickNumButtons(joystick);
+			hats = SDL_JoystickNumHats(joystick);
+			if (name == nullptr) name = SDL_JoystickName(joystick);
+			SDL_JoystickClose(joystick);
+		}
+		Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller {}: {} ({} axes, {} buttons, {} hats)", i,
+			name != nullptr ? name : "<unknown>", axes, buttons, hats);
+	}
+
+	SDL_AddEventWatch(VideoDriver_SDL_Base::GamepadProbeEventFilter, this);
+}
+
+void VideoDriver_SDL_Base::StopGamepadProbe()
+{
+	if (!this->gamepad_probe_started) return;
+	this->gamepad_probe_started = false;
+
+	SDL_DelEventWatch(VideoDriver_SDL_Base::GamepadProbeEventFilter, this);
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER)) SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+	if (SDL_WasInit(SDL_INIT_JOYSTICK)) SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+}
+
+int SDLCALL VideoDriver_SDL_Base::GamepadProbeEventFilter(void *, SDL_Event *event)
+{
+	switch (event->type) {
+		case SDL_JOYDEVICEADDED: {
+			int index = event->jdevice.which;
+			const char *name = SDL_IsGameController(index) ? SDL_GameControllerNameForIndex(index) : SDL_JoystickNameForIndex(index);
+			Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller {} connected: {}", index, name != nullptr ? name : "<unknown>");
+			break;
+		}
+
+		case SDL_JOYDEVICEREMOVED:
+			Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller disconnected");
+			break;
+
+		default:
+			if (!_gamepad_probe_verbose) break;
+			switch (event->type) {
+				case SDL_JOYAXISMOTION:
+					if (std::abs(event->jaxis.value) > 1000) {
+						Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller axis {} moved to {}", event->jaxis.axis, event->jaxis.value);
+					}
+					break;
+
+				case SDL_JOYBUTTONDOWN:
+					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller button {} pressed", event->jbutton.button);
+					break;
+
+				case SDL_JOYBUTTONUP:
+					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller button {} released", event->jbutton.button);
+					break;
+
+				case SDL_JOYHATMOTION:
+					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller hat {} moved to {}", event->jhat.hat, event->jhat.value);
+					break;
+
+				default: break;
+			}
+			break;
+	}
+	return 0;
+}
+
+/**
  * Initialize the driver.
  * @return An optional with the error message upon failure.
  */
@@ -706,11 +799,15 @@ std::optional<std::string_view> VideoDriver_SDL_Base::Start(const StringList &pa
 	this->is_game_threaded = !GetDriverParamBool(param, "no_threads") && !GetDriverParamBool(param, "no_thread");
 #endif
 
+	this->StartGamepadProbe();
+
 	return std::nullopt;
 }
 
 void VideoDriver_SDL_Base::Stop()
 {
+	this->StopGamepadProbe();
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	if (SDL_WasInit(SDL_INIT_EVERYTHING) == 0) {
 		SDL_Quit(); // If there's nothing left, quit SDL

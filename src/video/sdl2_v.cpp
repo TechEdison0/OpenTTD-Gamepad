@@ -645,14 +645,14 @@ static std::optional<std::string_view> InitializeSDL()
 }
 
 /**
- * Whether raw controller events should be logged. Noisy, so desktop builds opt in via
- * the environment; Android has no console to read, so it always logs.
+ * Whether raw controller events are logged. Always on while this fork is under test;
+ * release builds compile the diagnostics out with \c GAMEPAD_DEBUG_OFF.
  */
 static const bool _gamepad_probe_verbose =
-#ifdef __ANDROID__
-	true;
+#ifdef GAMEPAD_DEBUG_OFF
+	false;
 #else
-	std::getenv("OPENTTD_GAMEPAD_DEBUG") != nullptr;
+	true;
 #endif
 
 /** Joysticks opened by the probe; SDL only reports events for opened devices. */

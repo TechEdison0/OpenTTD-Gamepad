@@ -48,7 +48,7 @@ static constexpr std::initializer_list<NWidgetPart> _gamepad_debug_widgets = {
 		NWidget(WWT_STICKYBOX, Colours::Grey),
 	EndContainer(),
 	NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-		NWidget(WWT_EMPTY, Colours::Invalid, WID_GPD_CANVAS), SetMinimalSize(320, 0), SetFill(1, 1),
+		NWidget(WWT_EMPTY, Colours::Invalid, WID_GPD_CANVAS), SetMinimalSize(320, 200), SetFill(1, 1),
 	EndContainer(),
 };
 
@@ -71,6 +71,7 @@ public:
 	GamepadDebugWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
 	{
 		this->InitNested(number);
+		this->SetDirty();
 	}
 
 	void OnRealtimeTick(uint delta_ms) override

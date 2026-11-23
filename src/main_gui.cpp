@@ -572,12 +572,10 @@ void SetupColoursAndInitialWindow()
 			break;
 	}
 
-	#ifdef __ANDROID__
-	/* C0 scaffolding: always show the controller diagnostics window, since there is no
-	 * console to read on Android. Removed together with the probe itself. */
+	/* Test builds always show the controller diagnostics window; release builds compile it
+	 * out with GAMEPAD_DEBUG_OFF. */
+#ifndef GAMEPAD_DEBUG_OFF
 	ShowGamepadDebugWindow();
-#else
-	if (std::getenv("OPENTTD_GAMEPAD_DEBUG") != nullptr) ShowGamepadDebugWindow();
 #endif
 }
 

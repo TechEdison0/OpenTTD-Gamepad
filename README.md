@@ -15,6 +15,10 @@ other general documentation, see the
 **[upstream OpenTTD README](https://github.com/OpenTTD/OpenTTD/blob/master/README.md)**.
 Everything below describes only what this fork adds.
 
+[![Desktop build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml/badge.svg?branch=main)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml?query=branch%3Amain)
+[![Android build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml/badge.svg?branch=main)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml?query=branch%3Amain)
+![License](https://img.shields.io/badge/license-GPL--2.0--only-blue)
+
 ---
 
 ## What this fork is
@@ -137,6 +141,31 @@ the workspace `research/` directory next to this clone, not inside the repositor
 - [ ] Android single-screen touch/gamepad/kb-m parity
 - [ ] Android dual-screen regions and context-sensitive input routing
 - [ ] Device testing, polish, rebase rehearsal
+
+## Versions and downloads
+
+This is a **static test release**, not a product release channel.
+
+Each build is pinned to:
+
+- **OpenTTD `16.0-RC1`** (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`) — the upstream
+  engine at that tag, essentially unmodified;
+- **`psyycker/openttd-android`** @ `9407a7f` — the Android porting glue **as published,
+  before any modification by this fork**, vendored under `upstream-port/`;
+- this fork's own commits on top, which so far carry only build/packaging wiring, audio
+  fixes and documentation. No gamepad feature has landed yet.
+
+So the current artifacts amount to "the RC1 engine plus the donor Android patch, made to
+build and run" — useful for checking that the base works on each platform, and nothing
+more. Treat them as snapshots to test, not as releases to rely on.
+
+| Build | Commit | Artifacts |
+|---|---|---|
+| `20261123-main-gcd157d198b` | `cd157d198b` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`), Android `arm64-v8a` debug APK |
+
+Downloads are attached to the
+[GitHub releases page](https://github.com/TechEdison0/OpenTTD-Gamepad/releases).
+There is no updater and no nightly channel: download a file, run it, report what breaks.
 
 ## Credits and licensing
 

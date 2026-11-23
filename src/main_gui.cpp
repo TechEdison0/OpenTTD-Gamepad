@@ -25,6 +25,7 @@
 #include "linkgraph/linkgraph_gui.h"
 #include "tilehighlight_func.h"
 #include "hotkeys.h"
+#include "gamepad_debug.h"
 #include "error.h"
 #include "news_gui.h"
 #include "misc_cmd.h"
@@ -570,6 +571,8 @@ void SetupColoursAndInitialWindow()
 			ShowVitalWindows();
 			break;
 	}
+
+	if (std::getenv("OPENTTD_GAMEPAD_DEBUG") != nullptr) ShowGamepadDebugWindow();
 }
 
 /**

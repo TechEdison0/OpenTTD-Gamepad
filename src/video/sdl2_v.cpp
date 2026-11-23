@@ -19,6 +19,7 @@
 #include "../fileio_func.h"
 #include "../framerate_type.h"
 #include "../window_func.h"
+#include "../gamepad_debug.h"
 #ifdef __ANDROID__
 #	include "../network/network.h"
 #	include "../saveload/saveload_func.h"
@@ -649,6 +650,31 @@ static std::optional<std::string_view> InitializeSDL()
  */
 static bool _gamepad_probe_verbose = std::getenv("OPENTTD_GAMEPAD_DEBUG") != nullptr;
 
+/** Joysticks opened by the probe; SDL only reports events for opened devices. */
+static std::vector<SDL_Joystick *> _gamepad_probe_joysticks;
+
+/**
+ * Open a controller and describe it for the diagnostics window.
+ * @param index The SDL joystick index.
+ * @return The handle (null when it could not be opened) and the description.
+ */
+static std::pair<SDL_Joystick *, std::string> OpenProbeJoystick(int index)
+{
+	const char *name = SDL_IsGameController(index) ? SDL_GameControllerNameForIndex(index) : SDL_JoystickNameForIndex(index);
+	int axes = 0;
+	int buttons = 0;
+	int hats = 0;
+	SDL_Joystick *joystick = SDL_JoystickOpen(index);
+	if (joystick != nullptr) {
+		axes = SDL_JoystickNumAxes(joystick);
+		buttons = SDL_JoystickNumButtons(joystick);
+		hats = SDL_JoystickNumHats(joystick);
+		if (name == nullptr) name = SDL_JoystickName(joystick);
+	}
+	return {joystick, fmt::format("controller {}: {} ({} axes, {} buttons, {} hats)", index,
+		name != nullptr ? name : "<unknown>", axes, buttons, hats)};
+}
+
 void VideoDriver_SDL_Base::StartGamepadProbe()
 {
 	if (this->gamepad_probe_started) return;
@@ -663,22 +689,11 @@ void VideoDriver_SDL_Base::StartGamepadProbe()
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0) SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
 
 	int count = SDL_NumJoysticks();
-	Debug(Facility::Driver, Severity::Critical, "Gamepad probe: {} controller(s) connected", count);
+	GamepadDebugRecord(fmt::format("connected controllers: {}", count));
 	for (int i = 0; i < count; i++) {
-		const char *name = SDL_IsGameController(i) ? SDL_GameControllerNameForIndex(i) : SDL_JoystickNameForIndex(i);
-		int axes = 0;
-		int buttons = 0;
-		int hats = 0;
-		SDL_Joystick *joystick = SDL_JoystickOpen(i);
-		if (joystick != nullptr) {
-			axes = SDL_JoystickNumAxes(joystick);
-			buttons = SDL_JoystickNumButtons(joystick);
-			hats = SDL_JoystickNumHats(joystick);
-			if (name == nullptr) name = SDL_JoystickName(joystick);
-			SDL_JoystickClose(joystick);
-		}
-		Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller {}: {} ({} axes, {} buttons, {} hats)", i,
-			name != nullptr ? name : "<unknown>", axes, buttons, hats);
+		auto [joystick, description] = OpenProbeJoystick(i);
+		if (joystick != nullptr) _gamepad_probe_joysticks.push_back(joystick);
+		GamepadDebugRecord(description);
 	}
 
 	SDL_AddEventWatch(VideoDriver_SDL_Base::GamepadProbeEventFilter, this);
@@ -689,6 +704,11 @@ void VideoDriver_SDL_Base::StopGamepadProbe()
 	if (!this->gamepad_probe_started) return;
 	this->gamepad_probe_started = false;
 
+	for (SDL_Joystick *joystick : _gamepad_probe_joysticks) {
+		if (joystick != nullptr) SDL_JoystickClose(joystick);
+	}
+	_gamepad_probe_joysticks.clear();
+
 	SDL_DelEventWatch(VideoDriver_SDL_Base::GamepadProbeEventFilter, this);
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER)) SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 	if (SDL_WasInit(SDL_INIT_JOYSTICK)) SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
@@ -698,35 +718,44 @@ int SDLCALL VideoDriver_SDL_Base::GamepadProbeEventFilter(void *, SDL_Event *eve
 {
 	switch (event->type) {
 		case SDL_JOYDEVICEADDED: {
-			int index = event->jdevice.which;
-			const char *name = SDL_IsGameController(index) ? SDL_GameControllerNameForIndex(index) : SDL_JoystickNameForIndex(index);
-			Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller {} connected: {}", index, name != nullptr ? name : "<unknown>");
+			auto [joystick, description] = OpenProbeJoystick(event->jdevice.which);
+			if (joystick != nullptr) _gamepad_probe_joysticks.push_back(joystick);
+			std::string line = "connected: " + description;
+			GamepadDebugRecord(line);
+			Debug(Facility::Driver, Severity::Critical, "Gamepad probe: {}", line);
 			break;
 		}
 
-		case SDL_JOYDEVICEREMOVED:
-			Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller disconnected");
+		case SDL_JOYDEVICEREMOVED: {
+			SDL_Joystick *joystick = SDL_JoystickFromInstanceID(event->jdevice.which);
+			auto it = std::ranges::find(_gamepad_probe_joysticks, joystick);
+			if (it != std::end(_gamepad_probe_joysticks)) {
+				_gamepad_probe_joysticks.erase(it);
+				if (joystick != nullptr) SDL_JoystickClose(joystick);
+			}
+			GamepadDebugRecord("disconnected");
 			break;
+		}
 
 		default:
 			if (!_gamepad_probe_verbose) break;
 			switch (event->type) {
 				case SDL_JOYAXISMOTION:
 					if (std::abs(event->jaxis.value) > 1000) {
-						Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller axis {} moved to {}", event->jaxis.axis, event->jaxis.value);
+						GamepadDebugRecord(fmt::format("axis {} moved to {}", event->jaxis.axis, event->jaxis.value));
 					}
 					break;
 
 				case SDL_JOYBUTTONDOWN:
-					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller button {} pressed", event->jbutton.button);
+					GamepadDebugRecord(fmt::format("button {} pressed", event->jbutton.button));
 					break;
 
 				case SDL_JOYBUTTONUP:
-					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller button {} released", event->jbutton.button);
+					GamepadDebugRecord(fmt::format("button {} released", event->jbutton.button));
 					break;
 
 				case SDL_JOYHATMOTION:
-					Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller hat {} moved to {}", event->jhat.hat, event->jhat.value);
+					GamepadDebugRecord(fmt::format("hat {} moved to {}", event->jhat.hat, event->jhat.value));
 					break;
 
 				default: break;

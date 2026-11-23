@@ -743,6 +743,11 @@ enum class WindowClass : uint16_t {
 	 */
 	Help,
 
+	/**
+	 * Controller diagnostics window, used by the gamepad work.
+	 */
+	GamepadDebug,
+
 	Invalid = 0xFFFF, ///< Invalid window.
 };
 

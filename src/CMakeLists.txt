@@ -199,6 +199,8 @@ add_files(
     gamelog.cpp
     gamelog.h
     gamelog_internal.h
+    gamepad_debug.cpp
+    gamepad_debug.h
     genworld.cpp
     genworld.h
     genworld_gui.cpp

@@ -90,6 +90,10 @@ public:
 		const int line_height = GetCharacterHeight(FontSize::Small);
 		int y = r.top;
 
+		/* Custom widgets do not get a background painted for us; clear it ourselves or
+		 * successive frames smear into each other. */
+		GfxFillRect(r, PC_BLACK);
+
 		DrawString(r.left, r.right, y, "Controller diagnostics", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 		y += GetCharacterHeight(FontSize::Normal);
 

@@ -666,6 +666,8 @@ static std::vector<SDL_Joystick *> _gamepad_probe_joysticks;
 static std::pair<SDL_Joystick *, std::string> OpenProbeJoystick(int index)
 {
 	const char *name = SDL_IsGameController(index) ? SDL_GameControllerNameForIndex(index) : SDL_JoystickNameForIndex(index);
+	char guid[33];
+	SDL_JoystickGetGUIDString(SDL_JoystickGetDeviceGUID(index), guid, sizeof(guid));
 	int axes = 0;
 	int buttons = 0;
 	int hats = 0;
@@ -676,7 +678,7 @@ static std::pair<SDL_Joystick *, std::string> OpenProbeJoystick(int index)
 		hats = SDL_JoystickNumHats(joystick);
 		if (name == nullptr) name = SDL_JoystickName(joystick);
 	}
-	return {joystick, fmt::format("controller {}: {} ({} axes, {} buttons, {} hats)", index,
+	return {joystick, fmt::format("controller {} [{}]: {} ({} axes, {} buttons, {} hats)", index, guid,
 		name != nullptr ? name : "<unknown>", axes, buttons, hats)};
 }
 
@@ -738,7 +740,7 @@ int SDLCALL VideoDriver_SDL_Base::GamepadProbeEventFilter(void *, SDL_Event *eve
 				_gamepad_probe_joysticks.erase(it);
 				if (joystick != nullptr) SDL_JoystickClose(joystick);
 			}
-			GamepadDebugRecord("disconnected");
+			GamepadDebugRecord(fmt::format("disconnected (device id {})", event->jdevice.which));
 			break;
 		}
 

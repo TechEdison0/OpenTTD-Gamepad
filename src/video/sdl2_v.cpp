@@ -692,8 +692,6 @@ void VideoDriver_SDL_Base::StartGamepadProbe()
 		Debug(Facility::Driver, Severity::Warning, "Gamepad probe: controller support unavailable: {}", SDL_GetError());
 		return;
 	}
-	const char *joystick_driver = SDL_GetCurrentJoystickDriver();
-	Debug(Facility::Driver, Severity::Critical, "Gamepad probe: joystick backend '{}'", joystick_driver != nullptr ? joystick_driver : "<none>");
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0) {
 		const char *controller_error = SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) < 0 ? SDL_GetError() : "";
 		Debug(Facility::Driver, Severity::Critical, "Gamepad probe: controller mappings {}",

@@ -41,7 +41,7 @@ license files next to each directory. All are GPL-2.0-compatible.
 |---|---|---|
 | `psyycker/openttd-android` Gradle/NDK/vcpkg glue, vendored under `os/android/` and `src/os/android/` | GPL-2.0-only | https://github.com/psyycker/openttd-android @ `9407a7f`; delta recorded in `upstream-port/psyycker-rc1.patch` |
 | SDL Java/bootstrap classes under `os/android/app/src/main/java/org/libsdl/` | zlib | https://libsdl.org/ |
-| This fork's own changes (Android activities, `SoundFont.java`, dual-screen/layout work, Windows build probe) | GPL-2.0-only | this repository |
+| This fork's own changes (Android activities, `SoundFont.java`, dual-screen/layout work, Windows SDL linkage, controller probe and diagnostics, `wine_launch.sh`) | GPL-2.0-only | this repository |
 
 ## 3. Bundled data
 
@@ -99,7 +99,8 @@ reports for a configured build. Licenses verified from each port's `copyright` f
   engine, and the distro packages carry their own license texts on the system.
 - **Windows** (`Builds/openttd-<ver>-win64/`): statically linked against the vcpkg
   set above (no OpenSSL, no dynamic runtime DLLs beyond the Windows system ones).
-  Includes `soundfont.sf2` (GPL-2), `COPYING.md` and `LICENSE.txt`.
+  Includes `soundfont.sf2` (GPL-2), `wine_launch.sh` (GPL-2.0-only, this repository)
+  and `COPYING.md` / `LICENSE.txt`. SDL2 is linked statically for controller input.
 - **Android** (`Builds/*.apk`): self-contained APK; `libmain.so` statically links
   FluidSynth (LGPL-2.1), soxr, ICU, FreeType, HarfBuzz, SDL2, curl, OpenSSL, etc.
   The asset soundfont is GPL-2. The APK itself is not redistributable content — it
@@ -108,9 +109,8 @@ reports for a configured build. Licenses verified from each port's `copyright` f
 
 ## 6. Not compliant yet / known gaps
 
-- Inherited upstream workflows under `.github/workflows/` include release/upload
-  automation meant for the OpenTTD project's own infrastructure. They are inert on
-  this fork but should be removed so nobody mistakes them for working release
-  machinery.
+- Removed (commit `cd157d198b`): inherited upstream release/upload/preview/nightly
+  automation under `.github/workflows/`; only the fork's own CI and generic checks
+  remain.
 - Packages are built and published manually; there is no automated attestation that
   each uploaded artifact matches a tagged commit.

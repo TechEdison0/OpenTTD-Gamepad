@@ -36,9 +36,10 @@ AI-assisted provenance would make upstream review inappropriate, and the core go
 This is a separate, self-contained distribution.
 
 **Maturity:** experimental and generally unverified. Builds are reproducible from this
-repository, but device coverage is limited (desktop Linux, desktop Windows under Wine,
-Android via Waydroid). Do not use this fork for anything you care about losing; use
-upstream releases for that.
+repository, but device coverage is limited (desktop Linux, the x86_64 Windows build
+under Wine, Android phones such as the Galaxy S25 Ultra). Test builds additionally show
+a **Controller diagnostics** window with raw gamepad events. Do not use this fork for
+anything you care about losing; use upstream releases for that.
 
 Base pin: upstream **`16.0-RC1`** (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`),
 rebased onto future upstream release tags only — never nightlies.
@@ -135,6 +136,7 @@ the workspace `research/` directory next to this clone, not inside the repositor
 
 - [x] Baseline build and packaging for Linux, Windows and Android
 - [x] Working audio on all three (SFX + MIDI music)
+- [x] Controller signal path: SDL discovery/hotplug and an on-screen diagnostics window (test builds)
 - [ ] Core input: device model, normalization, bindings, action dispatcher
 - [ ] Controller foundation: focus ring, geometric D-pad, toolbar A/B
 - [ ] Dropdowns, build toolbars, on-screen keyboard under controller focus
@@ -144,24 +146,41 @@ the workspace `research/` directory next to this clone, not inside the repositor
 
 ## Versions and downloads
 
-This is a **static test release**, not a product release channel.
+Pre-releases are **test snapshots**, not a product channel. Each tag pins an exact
+commit of this repository; binaries and source are published together.
 
-Each build is pinned to:
+Every build is pinned to:
 
 - **OpenTTD `16.0-RC1`** (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`) — the upstream
   engine at that tag, essentially unmodified;
 - **`psyycker/openttd-android`** @ `9407a7f` — the Android porting glue **as published,
   before any modification by this fork**, vendored under `upstream-port/`;
-- this fork's own commits on top, which so far carry only build/packaging wiring, audio
-  fixes and documentation. No gamepad feature has landed yet.
+- this fork's own commits on top: build/packaging wiring, audio fixes, Windows SDL
+  linkage for controller input, and the controller probe described below.
 
-So the current artifacts amount to "the RC1 engine plus the donor Android patch, made to
-build and run" — useful for checking that the base works on each platform, and nothing
-more. Treat them as snapshots to test, not as releases to rely on.
+### Current test release — controller event verification
 
-| Build | Commit | Artifacts |
-|---|---|---|
-| `20261123-main-gcd157d198b` | `cd157d198b` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`), Android `arm64-v8a` debug APK |
+First release carrying a gamepad feature: raw controller events are captured by a
+shared SDL backend and shown in a native OpenTTD window, **Controller diagnostics**,
+which lists connected devices (name, SDL GUID, axes/buttons/hats) and streams
+connect/disconnect/axis/button/hat events live. The window opens automatically in these
+test builds; there is no configuration step.
+
+Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
+gamepad registry flags and selects the SDL backend); Android install the APK.
+
+Verified on desktop Linux, the x86_64 Windows build under Wine 9.0, and a Samsung
+Galaxy S25 Ultra. Waydroid can host the app for layout checks but does not forward
+Bluetooth gamepads.
+
+Known limits: mappings/bindings and D-pad navigation are not implemented yet; the
+window is scaffolding for that work and disappears from release builds compiled with
+`-DGAMEPAD_DEBUG_OFF`. Base graphics/sound/music sets are not included.
+
+| Release | Artifacts |
+|---|---|
+| `v20261124-c0-gamepad-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |
 
 Downloads are attached to the
 [GitHub releases page](https://github.com/TechEdison0/OpenTTD-Gamepad/releases).

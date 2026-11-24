@@ -5,8 +5,9 @@ file records only what this fork adds.
 
 ## 2026-11-24 — `v20261124-c0-gamepad-test` (pre-release, controller event verification)
 
-Cut from `main` at the commit named by the release tag; the binaries are built from
-that same commit.
+Cut from `main` at **`b85e59ff37`**; the Linux, Windows and Android artifacts in this
+release were built from that same commit, and `CI - Desktop` / `CI - Android` pass on
+it.
 
 ### Added
 

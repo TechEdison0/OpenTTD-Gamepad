@@ -11,7 +11,7 @@
 
 /** @file gamepad.cpp Controller discovery, hotplug and diagnostics. */
 
-#include "stdafx.h"
+#include "../stdafx.h"
 
 #include "gamepad.h"
 

@@ -142,6 +142,21 @@ endif()
 if(NOT OPTION_DEDICATED)
     if(WIN32)
         find_package(Xaudio2)
+        # Upstream builds Windows without SDL2, but this fork uses SDL2 for controller
+        # input (and offers the SDL video drivers as an option). Prefer the vcpkg CMake
+        # config package and fall back to the Find module.
+        find_package(SDL2 CONFIG QUIET)
+        if(NOT SDL2_FOUND)
+            find_package(SDL2)
+        endif()
+        if(SDL2_FOUND AND NOT TARGET SDL2::SDL2 AND TARGET SDL2::SDL2-static)
+            add_library(SDL2::SDL2 INTERFACE IMPORTED)
+            set_target_properties(SDL2::SDL2 PROPERTIES INTERFACE_LINK_LIBRARIES SDL2::SDL2-static)
+        endif()
+        # OpenTTD supplies its own entry point; stop SDL from renaming main().
+        if(SDL2_FOUND)
+            add_definitions(-DSDL_MAIN_HANDLED)
+        endif()
         # FluidSynth is not a Windows component; this fork bundles it via vcpkg so the
         # music plays even where the OS has no MIDI synthesizer. Prefer its CMake
         # config package, and fall back to the Find module (pkg-config based).

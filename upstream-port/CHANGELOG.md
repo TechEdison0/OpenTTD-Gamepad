@@ -3,11 +3,10 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-24 — `v20261124-c0-gamepad-test` (pre-release, controller event verification)
+## Unreleased — controller event verification (chunk C0)
 
-Cut from `main` at **`b85e59ff37`**; the Linux, Windows and Android artifacts in this
-release were built from that same commit, and `CI - Desktop` / `CI - Android` pass on
-it.
+Binaries for this work are cut from a single commit of `main`; the exact commit and
+release tag are recorded here when the artifacts are published.
 
 ### Added
 
@@ -15,15 +14,19 @@ it.
   controllers (name, SDL GUID, axes/buttons/hats) and streaming connect/disconnect,
   axis, button and hat events. It opens automatically in test builds and is compiled
   out of release builds with `-DGAMEPAD_DEBUG_OFF`.
-- **SDL2 linkage on Windows.** Upstream never probes SDL2 in its WIN32 branch, so the
-  controller code was not compiled into the Windows binary at all (`-v sdl` failed with
-  "no such video driver"). SDL2 is now discovered (vcpkg config package, aliased to
-  `SDL2::SDL2`) and linked statically, with `SDL_MAIN_HANDLED` so OpenTTD keeps its own
-  entry point. The executable contains both the SDL and native win32 video drivers;
-  driver autoprobe keeps win32 as the default.
+- **SDL2 linkage on Windows.** Upstream never probes SDL2 in its WIN32 branch, so no
+  controller code could exist in the Windows binary at all (`-v sdl` failed with "no such
+  video driver"). SDL2 is now discovered (vcpkg config package, aliased to `SDL2::SDL2`)
+  and linked statically, with `SDL_MAIN_HANDLED` so OpenTTD keeps its own entry point.
+  Both the SDL and native win32 video drivers remain available; autoprobe keeps win32 as
+  the default.
+- **Controller input moved out of the video driver** into `src/gamepad/` — its own source,
+  lifecycle and per-tick SDL pump. Discovery, hotplug and diagnostics no longer depend on
+  the SDL video driver, so a normal start (double-click, or `wine openttd.exe`) picks up
+  controllers while the native win32 video driver keeps handling the display.
 - **`upstream-port/wine_launch.sh`** — double-click launcher shipped in the Windows
   package. Applies the Wine `winebus` registry flags (`DisableHidraw`, `Enable SDL`)
-  non-interactively and starts the game with the SDL backend.
+  non-interactively and starts the game normally (no extra video-driver flag).
 - Console logging of probe state (mapping database, device count, per-device lines) so
   Wine can be diagnosed from a terminal.
 
@@ -32,9 +35,8 @@ it.
 - The window opens when the game starts; moving sticks and pressing buttons adds lines
   in real time.
 - Unplugging/reconnecting a controller is logged immediately.
-- On Windows use `wine_launch.sh` (or `wine openttd.exe -v sdl-opengl`). A plain
-  `wine openttd.exe` still selects the native video driver and therefore shows no
-  controller input until input handling is decoupled from the video driver.
+- Windows works with a plain start (`wine openttd.exe`, or a double-click); the launcher
+  script only applies Wine's gamepad registry flags.
 
 ### Verified platforms
 

@@ -34,7 +34,4 @@ set_winebus_value "Enable SDL" 1
 # backend (Wine's own HID stack is used instead).
 # export SDL_JOYSTICK_HIDAPI=0
 
-# Controllers are currently handled by the SDL backend, so the SDL video driver has to
-# be selected explicitly; the native win32 driver remains the default for desktop use.
-# Once input is decoupled from the video driver, this flag can be dropped.
-exec "$wine" "$here/openttd.exe" -v sdl-opengl "$@"
+exec "$wine" "$here/openttd.exe" "$@"

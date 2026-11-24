@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "blitter/factory.hpp"
+#include "gamepad/gamepad.h"
 #include "sound/sound_driver.hpp"
 #include "music/music_driver.hpp"
 #include "video/video_driver.hpp"
@@ -282,6 +283,8 @@ static void ParseResolution(Dimension &res, std::string_view s)
  */
 static void ShutdownGame()
 {
+	StopGamepads();
+
 	IConsoleFree();
 
 	if (_network_available) NetworkShutDown(); // Shut down the network and close any open connections
@@ -793,6 +796,8 @@ int openttd_main(std::span<std::string_view> arguments)
 
 	/* ScanNewGRFFiles now has control over the scanner. */
 	RequestNewGRFScan(scanner.release());
+
+	StartGamepads();
 
 	VideoDriver::GetInstance()->MainLoop();
 
@@ -1321,6 +1326,9 @@ bool RequestNewGRFScan(NewGRFScanCallback *callback)
 
 void GameLoop()
 {
+	/* Pump controller events even when a video driver other than SDL is active. */
+	UpdateGamepads();
+
 	if (_game_mode == GameMode::Bootstrap) {
 		/* Check for UDP stuff */
 		if (_network_available) NetworkBackgroundLoop();

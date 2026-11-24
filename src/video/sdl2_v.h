@@ -11,7 +11,6 @@
 #define VIDEO_SDL_H
 
 #include "video_driver.hpp"
-#include "sdl2_touch.h"
 
 /** The SDL video driver. */
 class VideoDriver_SDL_Base : public VideoDriver {
@@ -96,22 +95,6 @@ private:
 	void LoopOnce();
 	bool CreateMainSurface(uint w, uint h, bool resize);
 	std::optional<std::string_view> Initialize();
-#ifdef __ANDROID__
-	void SyncPointerCapture();
-	void ScrollWithJoystick();
-
-	std::chrono::steady_clock::time_point last_joystick_scroll{}; ///< When the map was last scrolled with the on-screen joystick.
-	float joystick_rest_x = 0; ///< Sub-pixel remainder of scrolling with the joystick.
-	float joystick_rest_y = 0; ///< Sub-pixel remainder of scrolling with the joystick.
-#endif
-
-	/** C0 gamepad probe: raw controller diagnostics. Temporary scaffolding. */
-	void StartGamepadProbe();
-	void StopGamepadProbe();
-	static int SDLCALL GamepadProbeEventFilter(void *userdata, SDL_Event *event);
-
-	bool gamepad_probe_started = false;
-	bool gamepad_probe_verbose = false;
 
 #ifdef __EMSCRIPTEN__
 	/* Convert a constant pointer back to a non-constant pointer to a member function. */
@@ -122,8 +105,6 @@ private:
 	 * This is true to indicate that keyboard input is in text input mode, and SDL_TEXTINPUT events are enabled.
 	 */
 	bool edit_box_focused = false;
-	bool touch_trackpad = false; ///< Touch input drives the cursor like a trackpad instead of being converted to mouse events by SDL.
-	TouchTrackpad trackpad;
 
 	int startup_display = 0; ///< The display to show OpenTTD on when starting.
 };

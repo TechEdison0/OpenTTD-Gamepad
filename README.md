@@ -167,7 +167,9 @@ connect/disconnect/axis/button/hat events live. The window opens automatically i
 test builds; there is no configuration step.
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
-gamepad registry flags and selects the SDL backend); Android install the APK.
+gamepad registry flags); Android install the APK. Controller input does not depend on
+the video driver, so the native win32 path is used where it is the default and a plain
+start shows controllers too.
 
 Verified on desktop Linux, the x86_64 Windows build under Wine 9.0, and a Samsung
 Galaxy S25 Ultra. Waydroid can host the app for layout checks but does not forward

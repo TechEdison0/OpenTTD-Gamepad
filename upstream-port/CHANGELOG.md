@@ -3,10 +3,11 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## Unreleased — controller event verification (chunk C0)
+## 2026-11-24 — `v20261124-c0-gamepad-test` (pre-release, controller event verification)
 
-Binaries for this work are cut from a single commit of `main`; the exact commit and
-release tag are recorded here when the artifacts are published.
+Cut from `main` at **`637364b8ad`**; the Linux, Windows and Android artifacts in this
+release were built from that same commit, and `CI - Desktop` / `CI - Android` pass on
+it.
 
 ### Added
 

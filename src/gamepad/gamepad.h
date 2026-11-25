@@ -42,6 +42,22 @@ size_t GetGamepadCount();
  */
 GamepadInfo GetGamepadInfo(size_t index);
 
+/**
+ * Number of mappable axes of a controller.
+ *
+ * Sensor-driven and otherwise unmapped raw axes (gyro/accelerometer noise) are
+ * excluded; a device without a controller mapping reports all of its raw axes.
+ * @param index Position in the discovery list.
+ */
+size_t GetGamepadAxisCount(size_t index);
+
+/**
+ * Raw SDL axis index of a controller's mappable axis, or \c -1 when out of range.
+ * @param index Position in the discovery list.
+ * @param axis Logical axis position as returned by #GetGamepadAxisCount().
+ */
+int GetGamepadAxis(size_t index, size_t axis);
+
 /** Index of the controller selected in the Controller window, or -1 for none. */
 int GetGamepadSelection();
 

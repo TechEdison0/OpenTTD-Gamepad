@@ -144,11 +144,11 @@ struct ControllerWindow : Window {
 	{
 		if (widget == WID_CT_LIST) {
 			GfxFillRect(r, PC_BLACK);
-			DrawString(r.left, r.right, r.top, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Small);
+			DrawString(r.left, r.right, r.top, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 			std::string status = GetControllerConfigStatus();
 			if (!status.empty()) {
-				DrawString(r.left, r.right, r.top + GetCharacterHeight(FontSize::Small), status,
-					TextColour::White, AlignmentH::Start, false, FontSize::Small);
+				DrawString(r.left, r.right, r.top + GetCharacterHeight(FontSize::Normal), status,
+					TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 			}
 		}
 	}

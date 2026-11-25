@@ -3,6 +3,45 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-25 — `v20261125-c1c-controller-selection-test` (pre-release, controller selection)
+
+Cut from `main` at **`abe0e800f8`** (commits `f7b628133d`, `abe0e800f8`); Linux, Windows
+and Android artifacts built from that revision, `-DGAMEPAD_DEBUG_OFF` everywhere.
+
+### Added
+
+- **Device registry** (`src/gamepad/`): connected controllers are tracked with name and
+  SDL GUID across hotplug, and exposed through `GetGamepadCount`/`GetGamepadInfo` plus a
+  selection index.
+- **Controller window**: the dropdown is populated from the registry; its caption now
+  comes from `Window::GetWidgetString` — the same mechanism the options window's
+  language/autosave/currency dropdowns use — so it displays the selected controller.
+  Selection updates immediately; the last config action is shown under the mapping area.
+- **`controller.cfg`** beside `hotkeys.cfg`: `[controller] selected=<guid>` plus a
+  per-GUID section holding an (empty until C1d) mapping list. Loading a controller with
+  no entry writes a fresh one.
+- **Startup restore**: `LoadControllerConfig()` runs right after `StartGamepads()`, so the
+  saved selection is reapplied automatically; **Load**/**Save** remain available.
+
+### Removed
+
+- The first-run participation-survey prompt, and survey transmission generally:
+  `NetworkSurveyHandler::IsSurveyPossible()` now returns false, which compiles out every
+  transmit path (including crashlog) and hides the settings/network preview entry. This
+  fork does not send data to upstream endpoints.
+
+### Verified
+
+- Desktop Linux, the x86_64 Windows build under Wine, and the Galaxy S25 Ultra: the
+  dropdown lists connected pads, the caption updates on selection, **Save** writes
+  `controller.cfg`, the selection survives a restart, and no survey prompt appears on a
+  clean config.
+
+### Known limitations
+
+- No mappings yet (empty keys), no mapping UI beyond the placeholder area.
+- Base graphics/sound/music sets are not shipped.
+
 ## 2026-11-25 — `v20261125-c1b-controller-gui-test` (pre-release, controller GUI)
 
 Cut from `main` at **`dda3695419`** (commits `1336eae5ad`, `dda3695419`); Linux, Windows

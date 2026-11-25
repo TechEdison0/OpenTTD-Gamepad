@@ -37,9 +37,9 @@ This is a separate, self-contained distribution.
 
 **Maturity:** experimental and generally unverified. Builds are reproducible from this
 repository, but device coverage is limited (desktop Linux, the x86_64 Windows build
-under Wine, Android phones such as the Galaxy S25 Ultra). Pre-release test builds show a
-**Controller diagnostics** window with raw gamepad events unless they are compiled with
-`-DGAMEPAD_DEBUG_OFF` (the published builds are). Do not use this fork for anything you
+under Wine, Android phones such as the Galaxy S25 Ultra). Published pre-releases are
+compiled with `-DGAMEPAD_DEBUG_OFF`: they ship no controller diagnostics window, and no
+survey/telemetry data is collected or transmitted. Do not use this fork for anything you
 care about losing; use upstream releases for that.
 
 Base pin: upstream **`16.0-RC1`** (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`),
@@ -47,7 +47,7 @@ rebased onto future upstream release tags only — never nightlies.
 
 ## Features
 
-1. **Desktop (Windows / Linux / macOS)** — discover gamepads, normalize input, navigate
+1. **Desktop (Windows / Linux)** — discover gamepads, normalize input, navigate
    the UI and play from a controller without breaking keyboard/mouse. The active input
    method switches automatically based on what you touch.
 2. **Android, single screen** — real touch interface, plus gamepad and kb/m.
@@ -115,35 +115,23 @@ The other platforms need nothing extra:
 
 - **Windows** — FluidSynth compiled in via vcpkg, with `soundfont.sf2` shipped next to
   `openttd.exe`. Works even where the OS MIDI mapper has no synthesizer (e.g. Wine).
-- **macOS** — uses CoreAudio's built-in synthesizer (`cocoa_midi`).
 - **Android** — compiles FluidSynth natively into the APK and ships the soundfont.
 
 ## Repository layout
 
 | Path | Purpose |
 |---|---|
-| `src/` | engine, including the (planned) core gamepad action/focus layer |
-| `src/os/android/` | Android native entry point |
+| `src/` | engine, plus this fork's controller additions |
+| `src/gamepad/` | controller subsystem: SDL discovery/hotplug, device registry, `controller.cfg` persistence |
+| `src/controller_gui.*` | standalone Controller settings window and its main-menu entry |
 | `os/android/` | Gradle/NDK/vcpkg Android application project |
-| `upstream-port/` | vendored additive build glue, its provenance and license notes |
+| `upstream-port/` | vendored additive build glue, the Wine launcher, provenance and license notes |
 | `THIRD_PARTY_NOTES.md` | third-party components and where they come from |
 | `.github/workflows/ci-desktop.yml`, `ci-android.yml` | the fork's own build checks |
 
 Upstream is tracked on the `upstream` remote; `main` is the integration branch,
 rebased onto new upstream release tags. Design research and the decision log live in
 the workspace `research/` directory next to this clone, not inside the repository.
-
-## Roadmap
-
-- [x] Baseline build and packaging for Linux, Windows and Android
-- [x] Working audio on all three (SFX + MIDI music)
-- [x] Controller signal path: SDL discovery/hotplug and an on-screen diagnostics window (test builds)
-- [ ] Core input: device model, normalization, bindings, action dispatcher
-- [ ] Controller foundation: focus ring, geometric D-pad, toolbar A/B
-- [ ] Dropdowns, build toolbars, on-screen keyboard under controller focus
-- [ ] Android single-screen touch/gamepad/kb-m parity
-- [ ] Android dual-screen regions and context-sensitive input routing
-- [ ] Device testing, polish, rebase rehearsal
 
 ## Versions and downloads
 
@@ -157,34 +145,31 @@ Every build is pinned to:
 - **`psyycker/openttd-android`** @ `9407a7f` — the Android porting glue **as published,
   before any modification by this fork**, vendored under `upstream-port/`;
 - this fork's own commits on top: build/packaging wiring, audio fixes, Windows SDL
-  linkage for controller input, and the controller probe described below.
+  linkage for controller input, the Controller window, the device registry and
+  `controller.cfg`, and removal of the startup survey.
 
-### Current test release — controller GUI
+### Current test release — controller selection
 
-`v20261125-c1b-controller-gui-test` adds the first real controller feature: a standalone
-**Controller** window on the main menu (directly below **Options**), with the
-selected-controller label, a controller dropdown, **Map Controller / Load / Save**
-buttons and a plaintext mapping area. Selection, persistence and mapping are *not*
-wired yet — this is the UI milestone (C1b). These builds are compiled with
-`-DGAMEPAD_DEBUG_OFF`, so the C0 **Controller diagnostics** window is completely
-absent; only the real Controller menu remains.
+`v20261125-c1c-controller-selection-test` adds controller **detection, selection and
+persistence**: the dropdown lists every connected controller from the live device
+registry, its caption shows the selected one (using the same mechanism as the options
+window's language/autosave/currency dropdowns), selection updates immediately, and the
+choice is stored in `controller.cfg` beside `hotkeys.cfg` and restored automatically on
+start. **Load**/**Save** in the window still work manually. The startup participation
+survey is gone and survey transmission is disabled at compile time, so nothing phones
+home to upstream endpoints. Builds remain compiled with `-DGAMEPAD_DEBUG_OFF` (no
+diagnostics window).
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
 gamepad registry flags, video stays on win32); Android install the APK. Open the main
-menu and pick **Controller**: the dropdown lists connected controllers and its caption
-shows the selected one (restored from `controller.cfg` automatically on start), and
-**Load**/**Save** work on `controller.cfg` beside `hotkeys.cfg` in the OpenTTD config
-directory (`~/.config/openttd/` on Linux with XDG, the personal dir on other platforms).
-The last config action is shown under the mapping area.
-
-Verified on desktop Linux, the x86_64 Windows build under Wine, and a Samsung Galaxy S25
-Ultra. Known limits: mappings are not captured yet — `controller.cfg` stores the
-selection plus an empty mapping list until C1d — and base graphics/sound/music sets are
-not included.
+menu and pick **Controller**. Mappings are not captured yet — `controller.cfg` stores the
+selection plus an empty mapping list until the next chunk (C1d) — and base
+graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261125-c1b-controller-gui-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1c-controller-selection-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1b-controller-gui-test` | Controller window UI milestone (no logic behind it) |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |
 

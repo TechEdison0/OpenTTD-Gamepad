@@ -148,9 +148,15 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current test release — controller mapping
+### Current test release — controller mapping feedback
 
-`v20261125-c1d-controller-mapping-test` adds the full **mapping flow**: main menu →
+`v20261125-c1e-controller-feedback-test` adds live feedback to the Controller window:
+each mapped row shows its current value — `pressed`/`released` for buttons, the raw
+number for axes and the hat bitfield for D-pads — refreshed every 100 ms for the
+selected controller. Trigger axes are only active once pulled away from their resting
+minimum; stick axes use a fixed magnitude threshold.
+
+It includes the full **mapping flow** from C1d: main menu →
 **Controller** → **Map Controller**, then follow 21 prompts covering every button,
 D-pad direction, stick axis and trigger. Captured values are stored per controller in
 `controller.cfg` beside `hotkeys.cfg` (`button:N`, `axis:N:min:max`, `hat:H:bits`) and
@@ -167,6 +173,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261125-c1e-controller-feedback-test` | live control values in the mapping list |
 | `v20261125-c1d-controller-mapping-test` | controller mapping capture, persistence per controller |
 | `v20261125-c1c-controller-selection-test` | controller detection, selection and persistence |
 | `v20261125-c1b-controller-gui-test` | Controller window UI milestone (no logic behind it) |

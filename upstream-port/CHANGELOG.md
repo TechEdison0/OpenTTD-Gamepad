@@ -3,6 +3,36 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-25 — `v20261125-c1e-controller-feedback-test` (pre-release, live map feedback)
+
+Cut from `main`; Linux, Windows and Android artifacts built from that revision,
+`-DGAMEPAD_DEBUG_OFF` everywhere. Verified by hand on all three targets.
+
+### Added
+
+- **Live control values** in the Controller window's mapping list: `pressed`/`released`
+  for buttons, the raw value for axes and the hat bitfield for D-pads, refreshed on a
+  100 ms tick. State is tracked in `src/gamepad/` for the selected controller only and
+  is cleared on selection change, removal and shutdown; it does not depend on the
+  diagnostics window.
+- Column header (`Control / Mapping / Live`) and green/grey highlighting of active rows.
+
+### Fixed
+
+- Trigger rows showed active at rest: SDL triggers rest at the bottom of their
+  calibrated range, so the old center-of-range test treated the resting value as pressed.
+  Triggers now activate only above `min + 25%` of range; sticks keep a fixed ~25%
+  magnitude threshold.
+
+### Verified
+
+Live values and trigger rest state on Linux x86_64, the Windows build under Wine and
+Android arm64-v8a (Galaxy S25 Ultra). Mapping and persistence from C1d unchanged.
+
+### Note
+
+`std::to_string` is banned by `safeguards.h`; value text uses `fmt::format`.
+
 ## 2026-11-25 — `v20261125-c1d-controller-mapping-test` (pre-release, controller mapping)
 
 Cut from `main`; Linux, Windows and Android artifacts built from that revision,

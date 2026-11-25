@@ -37,31 +37,46 @@ static const bool _gamepad_verbose =
 	true;
 #endif
 
+/** One opened controller plus its stable identity. */
+struct GamepadSlot {
+	SDL_Joystick *joystick = nullptr;
+	SDL_JoystickID instance_id = -1;
+	std::string name;
+	std::string guid;
+};
+
 /** Joysticks we keep open; SDL only reports events for opened devices. */
-static std::vector<SDL_Joystick *> _gamepads;
+static std::vector<GamepadSlot> _gamepad_slots;
+
+/** Controller selected in the Controller window; -1 means none. */
+static int _gamepad_selection = -1;
+
+/** Format the diagnostics line describing a controller. */
+static std::string DescribeGamepad(const GamepadSlot &slot, int axes, int buttons, int hats)
+{
+	return fmt::format("controller [{}]: {} ({} axes, {} buttons, {} hats)", slot.guid,
+		!slot.name.empty() ? slot.name : "<unknown>", axes, buttons, hats);
+}
 
 /**
  * Open a controller and describe it for the diagnostics window.
  * @param index The SDL joystick index.
- * @return The handle (null when it could not be opened) and the description.
+ * @return The slot (with a null handle when it could not be opened).
  */
-static std::pair<SDL_Joystick *, std::string> OpenGamepad(int index)
+static GamepadSlot OpenGamepad(int index)
 {
+	GamepadSlot slot;
 	const char *name = SDL_IsGameController(index) ? SDL_GameControllerNameForIndex(index) : SDL_JoystickNameForIndex(index);
 	char guid[33];
 	SDL_JoystickGetGUIDString(SDL_JoystickGetDeviceGUID(index), guid, sizeof(guid));
-	int axes = 0;
-	int buttons = 0;
-	int hats = 0;
-	SDL_Joystick *joystick = SDL_JoystickOpen(index);
-	if (joystick != nullptr) {
-		axes = SDL_JoystickNumAxes(joystick);
-		buttons = SDL_JoystickNumButtons(joystick);
-		hats = SDL_JoystickNumHats(joystick);
-		if (name == nullptr) name = SDL_JoystickName(joystick);
+	slot.guid = guid;
+	slot.joystick = SDL_JoystickOpen(index);
+	if (slot.joystick != nullptr) {
+		slot.instance_id = SDL_JoystickInstanceID(slot.joystick);
+		if (name == nullptr) name = SDL_JoystickName(slot.joystick);
 	}
-	return {joystick, fmt::format("controller {} [{}]: {} ({} axes, {} buttons, {} hats)", index, guid,
-		name != nullptr ? name : "<unknown>", axes, buttons, hats)};
+	slot.name = name != nullptr ? name : "";
+	return slot;
 }
 
 /** Handle device changes and, when enabled, raw axis/button/hat events. */
@@ -69,21 +84,24 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 {
 	switch (event->type) {
 		case SDL_JOYDEVICEADDED: {
-			auto [joystick, description] = OpenGamepad(event->jdevice.which);
-			if (joystick != nullptr) _gamepads.push_back(joystick);
-			std::string line = "connected: " + description;
+			GamepadSlot slot = OpenGamepad(event->jdevice.which);
+			int axes = slot.joystick != nullptr ? SDL_JoystickNumAxes(slot.joystick) : 0;
+			int buttons = slot.joystick != nullptr ? SDL_JoystickNumButtons(slot.joystick) : 0;
+			int hats = slot.joystick != nullptr ? SDL_JoystickNumHats(slot.joystick) : 0;
+			std::string line = "connected: " + DescribeGamepad(slot, axes, buttons, hats);
+			if (slot.joystick != nullptr) _gamepad_slots.push_back(std::move(slot));
 			GamepadDebugRecord(line);
 			Debug(Facility::Driver, Severity::Critical, "Gamepad: {}", line);
 			break;
 		}
 
 		case SDL_JOYDEVICEREMOVED: {
-			SDL_Joystick *joystick = SDL_JoystickFromInstanceID(event->jdevice.which);
-			auto it = std::ranges::find(_gamepads, joystick);
-			if (it != std::end(_gamepads)) {
-				_gamepads.erase(it);
-				if (joystick != nullptr) SDL_JoystickClose(joystick);
+			auto it = std::ranges::find_if(_gamepad_slots, [&](const GamepadSlot &slot) { return slot.instance_id == event->jdevice.which; });
+			if (it != std::end(_gamepad_slots)) {
+				if (it->joystick != nullptr) SDL_JoystickClose(it->joystick);
+				_gamepad_slots.erase(it);
 			}
+			if (_gamepad_selection >= static_cast<int>(_gamepad_slots.size())) _gamepad_selection = -1;
 			GamepadDebugRecord(fmt::format("disconnected (device id {})", event->jdevice.which));
 			break;
 		}
@@ -133,8 +151,12 @@ void StartGamepads()
 	GamepadDebugRecord(fmt::format("connected controllers: {}", count));
 	Debug(Facility::Driver, Severity::Critical, "Gamepad: {} controller(s) connected", count);
 	for (int i = 0; i < count; i++) {
-		auto [joystick, description] = OpenGamepad(i);
-		if (joystick != nullptr) _gamepads.push_back(joystick);
+		GamepadSlot slot = OpenGamepad(i);
+		int axes = slot.joystick != nullptr ? SDL_JoystickNumAxes(slot.joystick) : 0;
+		int buttons = slot.joystick != nullptr ? SDL_JoystickNumButtons(slot.joystick) : 0;
+		int hats = slot.joystick != nullptr ? SDL_JoystickNumHats(slot.joystick) : 0;
+		std::string description = DescribeGamepad(slot, axes, buttons, hats);
+		if (slot.joystick != nullptr) _gamepad_slots.push_back(std::move(slot));
 		GamepadDebugRecord(description);
 		Debug(Facility::Driver, Severity::Critical, "Gamepad: {}", description);
 	}
@@ -144,14 +166,37 @@ void StartGamepads()
 
 void StopGamepads()
 {
-	for (SDL_Joystick *joystick : _gamepads) {
-		if (joystick != nullptr) SDL_JoystickClose(joystick);
+	for (GamepadSlot &slot : _gamepad_slots) {
+		if (slot.joystick != nullptr) SDL_JoystickClose(slot.joystick);
 	}
-	_gamepads.clear();
+	_gamepad_slots.clear();
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK)) SDL_DelEventWatch(GamepadEventFilter, nullptr);
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER)) SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 	if (SDL_WasInit(SDL_INIT_JOYSTICK)) SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+}
+
+size_t GetGamepadCount()
+{
+	return _gamepad_slots.size();
+}
+
+GamepadInfo GetGamepadInfo(size_t index)
+{
+	if (index >= _gamepad_slots.size()) return {};
+	const GamepadSlot &slot = _gamepad_slots[index];
+	return {slot.name, slot.guid};
+}
+
+int GetGamepadSelection()
+{
+	return _gamepad_selection;
+}
+
+void SetGamepadSelection(int index)
+{
+	if (index < -1 || index >= static_cast<int>(_gamepad_slots.size())) return;
+	_gamepad_selection = index;
 }
 
 void UpdateGamepads()

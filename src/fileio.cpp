@@ -990,6 +990,8 @@ void DeterminePaths(std::string_view exe, bool only_local_path)
 	_highscore_file = config_dir + "hs.dat";
 	extern std::string _hotkeys_file;
 	_hotkeys_file = config_dir + "hotkeys.cfg";
+	extern std::string _controller_file;
+	_controller_file = config_dir + "controller.cfg";
 	extern std::string _windows_file;
 	_windows_file = config_dir + "windows.cfg";
 	extern std::string _private_file;

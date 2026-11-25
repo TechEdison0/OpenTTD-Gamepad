@@ -26,4 +26,29 @@ void StopGamepads();
  */
 void UpdateGamepads();
 
+/** A discovered controller's stable identity. */
+struct GamepadInfo {
+	std::string name; ///< Display name reported by SDL.
+	std::string guid; ///< SDL GUID string; used as the key in controller.cfg.
+};
+
+/** Number of currently connected controllers. */
+size_t GetGamepadCount();
+
+/**
+ * Describe a connected controller.
+ * @param index Position in the discovery list.
+ * @return The controller's identity, or empty strings when the index is out of range.
+ */
+GamepadInfo GetGamepadInfo(size_t index);
+
+/** Index of the controller selected in the Controller window, or -1 for none. */
+int GetGamepadSelection();
+
+/**
+ * Select a controller from the discovery list.
+ * @param index Position in the list, or -1 for none.
+ */
+void SetGamepadSelection(int index);
+
 #endif /* GAMEPAD_GAMEPAD_H */

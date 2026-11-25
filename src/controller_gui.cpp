@@ -14,6 +14,8 @@
 #include "stdafx.h"
 
 #include "controller_gui.h"
+#include "gamepad/gamepad.h"
+#include "gamepad/controller_config.h"
 #include "window_gui.h"
 #include "window_func.h"
 #include "gfx_func.h"
@@ -49,7 +51,7 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 	NWidget(WWT_PANEL, Colours::Grey),
 		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
 			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LABEL), SetMinimalSize(280, 10), SetFill(1, 0),
-			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetFill(1, 0),
+			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetStringTip(STR_CONTROLLER_SELECT, STR_NULL), SetFill(1, 0),
 			NWidget(NWID_HORIZONTAL), SetPIP(0, WidgetDimensions::unscaled.hsep_wide, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_MAP), SetMinimalSize(90, 12), SetStringTip(STR_CONTROLLER_MAP, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
@@ -82,21 +84,53 @@ struct ControllerWindow : Window {
 	{
 		switch (widget) {
 			case WID_CT_DROPDOWN: {
-				/* Placeholder list until the device registry lands in C1c. */
 				DropDownList list;
-				list.push_back(MakeDropDownListStringItem(std::string{GetString(STR_CONTROLLER_NONE)}, 0));
-				ShowDropDownList(this, std::move(list), 0, WID_CT_DROPDOWN);
+				size_t count = GetGamepadCount();
+				if (count == 0) {
+					list.push_back(MakeDropDownListStringItem(std::string{GetString(STR_CONTROLLER_NONE)}, 0));
+				} else {
+					for (size_t i = 0; i < count; i++) {
+						GamepadInfo info = GetGamepadInfo(i);
+						std::string label = info.name.empty() ? std::string{GetString(STR_CONTROLLER_NONE)} : info.name;
+						list.push_back(MakeDropDownListStringItem(std::move(label), static_cast<int>(i)));
+					}
+				}
+				int selected = GetGamepadSelection();
+				ShowDropDownList(this, std::move(list), selected >= 0 ? selected : 0, WID_CT_DROPDOWN);
 				break;
 			}
+
+			case WID_CT_LOAD:
+				LoadControllerConfig();
+				this->SetDirty();
+				break;
+
+			case WID_CT_SAVE:
+				SaveControllerConfig();
+				this->SetDirty();
+				break;
 
 			default: break;
 		}
 	}
 
+	void OnDropdownSelect(WidgetID widget, int index, [[maybe_unused]] int click_result) override
+	{
+		if (widget != WID_CT_DROPDOWN) return;
+		SetGamepadSelection(index >= 0 && static_cast<size_t>(index) < GetGamepadCount() ? index : -1);
+		this->SetDirty();
+	}
+
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
 		if (widget == WID_CT_LABEL) {
-			DrawString(r.left, r.right, r.top, GetString(STR_CONTROLLER_SELECTED, std::string{GetString(STR_CONTROLLER_NONE)}),
+			std::string name = std::string{GetString(STR_CONTROLLER_NONE)};
+			int selected = GetGamepadSelection();
+			if (selected >= 0 && static_cast<size_t>(selected) < GetGamepadCount()) {
+				name = GetGamepadInfo(static_cast<size_t>(selected)).name;
+				if (name.empty()) name = std::string{GetString(STR_CONTROLLER_NONE)};
+			}
+			DrawString(r.left, r.right, r.top, GetString(STR_CONTROLLER_SELECTED, name),
 				TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 		} else if (widget == WID_CT_LIST) {
 			GfxFillRect(r, PC_BLACK);

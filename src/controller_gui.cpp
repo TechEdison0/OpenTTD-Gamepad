@@ -44,15 +44,19 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 		NWidget(WWT_CAPTION, Colours::Grey, WID_CT_CAPTION), SetStringTip(STR_CONTROLLER_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
 		NWidget(WWT_STICKYBOX, Colours::Grey),
 	EndContainer(),
-	NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-		NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LABEL), SetMinimalSize(280, 10), SetFill(1, 0),
-		NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetFill(1, 0),
-		NWidget(NWID_HORIZONTAL), SetPIP(0, WidgetDimensions::unscaled.hsep_wide, 0),
-			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_MAP), SetMinimalSize(90, 12), SetStringTip(STR_CONTROLLER_MAP, STR_NULL),
-			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
-			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_SAVE), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_SAVE, STR_NULL),
+	/* Background panel: without it the custom EMPTY widgets leave uncovered
+	 * screen area behind, which smears whatever was drawn before. */
+	NWidget(WWT_PANEL, Colours::Grey),
+		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LABEL), SetMinimalSize(280, 10), SetFill(1, 0),
+			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetFill(1, 0),
+			NWidget(NWID_HORIZONTAL), SetPIP(0, WidgetDimensions::unscaled.hsep_wide, 0),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_MAP), SetMinimalSize(90, 12), SetStringTip(STR_CONTROLLER_MAP, STR_NULL),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_SAVE), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_SAVE, STR_NULL),
+			EndContainer(),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(280, 120), SetFill(1, 1),
 		EndContainer(),
-		NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(280, 120), SetFill(1, 1),
 	EndContainer(),
 };
 

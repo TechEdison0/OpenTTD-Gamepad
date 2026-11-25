@@ -37,11 +37,11 @@ public:
 
 	/**
 	 * Check whether a survey is possible.
-	 * @return \c true.
+	 * @return \c false: this fork never phones home to upstream servers.
 	 */
 	static constexpr bool IsSurveyPossible()
 	{
-		return true;
+		return false;
 	}
 
 private:

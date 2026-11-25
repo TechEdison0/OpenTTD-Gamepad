@@ -84,9 +84,6 @@ bool IsControllerMapping();
  */
 std::string GetControllerMappingPrompt();
 
-/** Last raw input seen during mapping, for diagnosing capture problems. */
-std::string GetControllerMappingLastInput();
-
 /**
  * Rows for the window's mapping area: (step label, captured value description).
  * Uncaptured steps show an em dash.

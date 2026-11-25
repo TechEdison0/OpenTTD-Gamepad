@@ -162,12 +162,6 @@ struct ControllerWindow : Window {
 			y += line_height;
 		}
 
-		std::string last_input = GetControllerMappingLastInput();
-		if (!last_input.empty()) {
-			DrawString(r.left, r.right, y, last_input, TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
-			y += line_height;
-		}
-
 		auto rows = GetControllerMappingRows();
 		size_t current = rows.size();
 		bool any_set = false;

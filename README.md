@@ -148,27 +148,27 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current test release — controller selection
+### Current test release — controller mapping
 
-`v20261125-c1c-controller-selection-test` adds controller **detection, selection and
-persistence**: the dropdown lists every connected controller from the live device
-registry, its caption shows the selected one (using the same mechanism as the options
-window's language/autosave/currency dropdowns), selection updates immediately, and the
-choice is stored in `controller.cfg` beside `hotkeys.cfg` and restored automatically on
-start. **Load**/**Save** in the window still work manually. The startup participation
-survey is gone and survey transmission is disabled at compile time, so nothing phones
-home to upstream endpoints. Builds remain compiled with `-DGAMEPAD_DEBUG_OFF` (no
-diagnostics window).
+`v20261125-c1d-controller-mapping-test` adds the full **mapping flow**: main menu →
+**Controller** → **Map Controller**, then follow 21 prompts covering every button,
+D-pad direction, stick axis and trigger. Captured values are stored per controller in
+`controller.cfg` beside `hotkeys.cfg` (`button:N`, `axis:N:min:max`, `hat:H:bits`) and
+reloaded on start; finishing the flow auto-saves, so no manual click is needed.
+Capture rules: buttons record on release with a short settle delay; stick axes must
+move past half travel and return before they count (measured from each axis' resting
+value, which matters because triggers rest at the SDL minimum); triggers accept either
+a digital button or an analog pull; D-pad records the hat direction when the pad has
+one. Gyroscope/accelerometer-style axes are excluded from mapping entirely.
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
-gamepad registry flags, video stays on win32); Android install the APK. Open the main
-menu and pick **Controller**. Mappings are not captured yet — `controller.cfg` stores the
-selection plus an empty mapping list until the next chunk (C1d) — and base
+gamepad registry flags, video stays on win32); Android install the APK. Base
 graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261125-c1c-controller-selection-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1d-controller-mapping-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1c-controller-selection-test` | controller detection, selection and persistence |
 | `v20261125-c1b-controller-gui-test` | Controller window UI milestone (no logic behind it) |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |

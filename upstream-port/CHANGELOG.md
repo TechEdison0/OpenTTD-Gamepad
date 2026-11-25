@@ -3,6 +3,39 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-25 — `v20261125-c1d-controller-mapping-test` (pre-release, controller mapping)
+
+Cut from `main`; Linux, Windows and Android artifacts built from that revision,
+`-DGAMEPAD_DEBUG_OFF` everywhere.
+
+### Added
+
+- **Mapping flow** (`src/gamepad/controller_config.*`): 21 prompt-driven capture steps
+  in the Controller window — face/shoulder/system buttons, D-pad directions, stick
+  axes, triggers. Buttons capture on release after a short settle; stick axes must
+  move past half travel and return before they count; triggers accept a digital button
+  or an analog pull; the D-pad records the hat direction when available.
+- **Persistence**: captured values written to `controller.cfg` per controller GUID
+  (`button:N`, `axis:N:min:max`, `hat:H:bits`), parsed back on load, and auto-saved when
+  the flow finishes. The window shows the live prompt, highlights the current step and
+  lists every captured value; Map Controller toggles to Cancel and selection/load/save
+  are locked mid-flow.
+- **Noise-axis filtering**: mapped devices only expose axes bound to the six standard
+  controller axes, so gyro/accelerometer-style extras cannot be selected; sensor events
+  are ignored and all sensor types explicitly disabled at open.
+
+### Fixed
+
+- Trigger capture: SDL triggers rest at `-32767` and close at `+32767`, so the
+  baseline-relative delta reached 65534 and overflowed `int16_t` (wrapping to -2),
+  which made engagement impossible. The delta is computed in `int`; stick axes were
+  unaffected because their baseline is near zero.
+
+### Verified
+
+- Full mapping verified by hand on Linux, Windows under Wine and Android; triggers
+  capture correctly on X-input pads across Bluetooth and 2.4 GHz.
+
 ## 2026-11-25 — `v20261125-c1c-controller-selection-test` (pre-release, controller selection)
 
 Cut from `main` at **`abe0e800f8`** (commits `f7b628133d`, `abe0e800f8`); Linux, Windows

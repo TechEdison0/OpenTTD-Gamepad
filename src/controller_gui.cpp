@@ -201,7 +201,8 @@ public:
 				DrawString(r.left, r.left + 200, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
 				DrawString(r.left + 200, r.left + 370, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
 				bool active = IsControllerMappingControlActive(i);
-				DrawString(r.left + 370, r.right, y, active ? "ON" : "-",
+				std::string live = GetControllerMappingLiveText(i);
+				DrawString(r.left + 370, r.right, y, live,
 						active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Normal);
 				y += line_height;
 			}

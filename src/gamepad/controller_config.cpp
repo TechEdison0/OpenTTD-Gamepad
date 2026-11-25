@@ -361,15 +361,16 @@ bool IsControllerMappingControlActive(size_t step)
 			return GetGamepadLiveButton(value.index);
 
 		case MappingKind::Axis: {
-			/* Triggers rest at the bottom of their range, sticks near the middle, so the
-			 * threshold is relative to the calibrated center. Use int: a full trigger
-			 * swing is 65534 and overflows int16_t. */
-			int range = static_cast<int>(value.max) - static_cast<int>(value.min);
-			if (range <= 0) return false;
-			int center = static_cast<int>(value.min) + range / 2;
-			int margin = range / 4;
+			/* Sticks rest near zero, triggers at the bottom of their range, so they need
+			 * different tests. Use int: a full trigger swing is 65534 and overflows
+			 * int16_t. */
+			if (_mapping_steps[step].flag == MAPPING_STEP_TRIGGER) {
+				int range = static_cast<int>(value.max) - static_cast<int>(value.min);
+				if (range <= 0) return false;
+				return GetGamepadLiveAxis(value.index) > static_cast<int>(value.min) + range / 4;
+			}
 			int live = GetGamepadLiveAxis(value.index);
-			return live > center + margin || live < center - margin;
+			return live > _mapping_axis_threshold / 2 || live < -_mapping_axis_threshold / 2;
 		}
 
 		case MappingKind::Hat:
@@ -379,6 +380,26 @@ bool IsControllerMappingControlActive(size_t step)
 			return false;
 	}
 	return false;
+}
+
+std::string GetControllerMappingLiveText(size_t step)
+{
+	if (step >= _mapping_values.size()) return "-";
+	const MappingValue &value = _mapping_values[step];
+	switch (value.kind) {
+		case MappingKind::Button:
+			return GetGamepadLiveButton(value.index) ? "pressed" : "released";
+
+		case MappingKind::Axis:
+			return fmt::format("{}", GetGamepadLiveAxis(value.index));
+
+		case MappingKind::Hat:
+			return fmt::format("{}", GetGamepadLiveHat(value.index));
+
+		case MappingKind::None:
+			return "-";
+	}
+	return "-";
 }
 
 bool StartControllerMapping()

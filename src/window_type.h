@@ -748,6 +748,11 @@ enum class WindowClass : uint16_t {
 	 */
 	GamepadDebug,
 
+	/**
+	 * Controller settings window (selection and mapping), added by the gamepad work.
+	 */
+	Controller,
+
 	Invalid = 0xFFFF, ///< Invalid window.
 };
 

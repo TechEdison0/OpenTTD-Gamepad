@@ -23,6 +23,7 @@ enum SelectGameIntroWidgets : WidgetID {
 	WID_SGI_TRANSLATION_SELECTION, ///< Translation selection.
 	WID_SGI_TRANSLATION,           ///< Translation errors.
 	WID_SGI_OPTIONS,               ///< Options button.
+	WID_SGI_CONTROLLER,         ///< Controller settings button.
 	WID_SGI_HIGHSCORE,             ///< Highscore button.
 	WID_SGI_HELP,                  ///< Help and manuals button.
 	WID_SGI_CONTENT_DOWNLOAD,      ///< Content Download button.

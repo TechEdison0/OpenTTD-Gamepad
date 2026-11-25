@@ -6074,3 +6074,11 @@ STR_BADGE_CONFIG_FILTERS                                        :{WHITE}Badge Fi
 STR_BADGE_CONFIG_PREVIEW                                        :Preview Image
 STR_BADGE_CONFIG_NAME                                           :Name
 STR_BADGE_FILTER_ANY_LABEL                                      :Any {STRING}
+STR_INTRO_CONTROLLER                                            :{BLACK}Controller
+STR_INTRO_TOOLTIP_CONTROLLER                                    :{BLACK}Open controller settings
+STR_CONTROLLER_CAPTION                                          :{BLACK}Controller
+STR_CONTROLLER_NONE                                              :{BLACK}none
+STR_CONTROLLER_SELECTED                                         :{BLACK}Selected Controller: {STRING}
+STR_CONTROLLER_MAP                                              :{BLACK}Map Controller
+STR_CONTROLLER_LOAD                                             :{BLACK}Load
+STR_CONTROLLER_SAVE                                             :{BLACK}Save

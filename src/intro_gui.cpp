@@ -8,6 +8,7 @@
 /** @file intro_gui.cpp The main menu GUI. */
 
 #include "stdafx.h"
+#include "controller_gui.h"
 #include "error.h"
 #include "gui.h"
 #include "window_gui.h"
@@ -316,6 +317,7 @@ struct SelectGameWindow : public Window {
 				break;
 
 			case WID_SGI_OPTIONS:         ShowGameOptions(); break;
+			case WID_SGI_CONTROLLER:     ShowControllerWindow(); break;
 #ifdef __ANDROID__
 			case WID_SGI_ANDROID_SETTINGS: ShowAndroidAppSettings(); break;
 #endif
@@ -367,6 +369,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_select_game_widgets 
 			/* Other */
 			NWidget(NWID_VERTICAL), SetPIP(0, WidgetDimensions::unscaled.vsep_normal, 0),
 				NWidget(WWT_PUSHIMGTEXTBTN, Colours::Orange, WID_SGI_OPTIONS), SetToolbarMinimalSize(1), SetSpriteStringTip(SPR_IMG_SETTINGS, STR_INTRO_GAME_OPTIONS, STR_INTRO_TOOLTIP_GAME_OPTIONS), SetAlignment({AlignmentH::Start, AlignmentV::Middle}), SetFill(1, 0),
+				NWidget(WWT_PUSHIMGTEXTBTN, Colours::Orange, WID_SGI_CONTROLLER), SetToolbarMinimalSize(1), SetSpriteStringTip(SPR_IMG_SETTINGS, STR_INTRO_CONTROLLER, STR_INTRO_TOOLTIP_CONTROLLER), SetAlignment({AlignmentH::Start, AlignmentV::Middle}), SetFill(1, 0),
 #ifdef __ANDROID__
 				NWidget(WWT_PUSHIMGTEXTBTN, Colours::Orange, WID_SGI_ANDROID_SETTINGS), SetToolbarMinimalSize(1), SetSpriteStringTip(SPR_IMG_SAVE, STR_INTRO_ANDROID_APP_SETTINGS, STR_INTRO_TOOLTIP_ANDROID_APP_SETTINGS), SetAlignment({AlignmentH::Start, AlignmentV::Middle}), SetFill(1, 0),
 #endif

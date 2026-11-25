@@ -133,6 +133,8 @@ add_files(
     console_gui.h
     console_internal.h
     console_type.h
+    controller_gui.cpp
+    controller_gui.h
     cpu.cpp
     cpu.h
     crashlog.cpp

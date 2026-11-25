@@ -78,6 +78,7 @@ android {
                     "-DANDROID_ASSETS_DIR=$gameDataDir",
                     "-DANDROID_STL=c++_shared",
                     "-DOPTION_USE_ASSERTS=OFF",
+                    "-DCMAKE_CXX_FLAGS=-DGAMEPAD_DEBUG_OFF",
                 )
                 targets += "openttd"
             }
@@ -141,7 +142,7 @@ android {
     packaging {
         jniLibs {
             /* libmain.so contains the ICU data and compresses well; keep the APK small. */
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
     }
 }

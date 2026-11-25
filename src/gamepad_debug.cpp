@@ -19,8 +19,13 @@
 
 #include <deque>
 #include <mutex>
+#include <string_view>
 
 #include "safeguards.h"
+
+/* The diagnostics window is scaffolding: release builds compiled with
+ * GAMEPAD_DEBUG_OFF leave no trace of it. */
+#ifndef GAMEPAD_DEBUG_OFF
 
 /** Number of event lines kept for display. */
 static const size_t GAMEPAD_DEBUG_HISTORY = 64;
@@ -111,3 +116,11 @@ void ShowGamepadDebugWindow()
 {
 	AllocateWindowDescFront<GamepadDebugWindow>(_gamepad_debug_desc, 0);
 }
+
+#else
+
+void GamepadDebugRecord(std::string_view)
+{
+}
+
+#endif

@@ -94,6 +94,9 @@ static bool _mapping_axis_engaged = false;
 static std::array<int16_t, 16> _mapping_axis_baselines = {};
 static std::array<bool, 16> _mapping_axis_baseline_set = {};
 
+/** Last raw input fed to the mapper, shown in the window while diagnosing. */
+static std::string _mapping_last_input;
+
 /** Human-readable name of a hat direction bitfield. */
 static std::string DescribeHatDirection(uint8_t bits)
 {
@@ -236,6 +239,7 @@ static void ResetMappingStepState()
 	_mapping_axis_engaged = false;
 	_mapping_axis_baselines.fill(0);
 	_mapping_axis_baseline_set.fill(false);
+	_mapping_last_input.clear();
 }
 
 /** Store the axis tracked during this step and move on. */
@@ -342,6 +346,11 @@ std::string GetControllerMappingPrompt()
 	return fmt::format("Press {} (step {} of {})", step.label, _mapping_step + 1, _mapping_steps.size());
 }
 
+std::string GetControllerMappingLastInput()
+{
+	return _mapping_last_input;
+}
+
 std::vector<std::pair<std::string, std::string>> GetControllerMappingRows()
 {
 	std::vector<std::pair<std::string, std::string>> rows;
@@ -390,6 +399,7 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 
 	switch (type) {
 		case ControllerInputEventType::ButtonUp:
+			_mapping_last_input = fmt::format("last input: button {} released", index);
 			if (!settled) break;
 			if (step.flag == MAPPING_STEP_BUTTON || step.flag == MAPPING_STEP_DPAD ||
 					(step.flag == MAPPING_STEP_TRIGGER && !_mapping_axis_engaged)) {
@@ -398,6 +408,7 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 			break;
 
 		case ControllerInputEventType::HatMotion:
+			_mapping_last_input = fmt::format("last input: hat {} = {}", index, value);
 			if (!settled || step.flag != MAPPING_STEP_DPAD) break;
 			if (value != SDL_HAT_CENTERED) {
 				_mapping_values[_mapping_step] = MappingValue{MappingKind::Hat, index, -32768, 32767, static_cast<uint8_t>(value)};
@@ -409,6 +420,8 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 
 		case ControllerInputEventType::AxisMotion: {
 			if (step.flag != MAPPING_STEP_AXIS && step.flag != MAPPING_STEP_TRIGGER) break;
+			_mapping_last_input = fmt::format("last input: axis {} = {}{}", index, value,
+				IsSelectedControllerAxis(index) ? "" : " (not mappable)");
 			if (!IsSelectedControllerAxis(index)) break;
 
 			if (value < _mapping_axis_min) _mapping_axis_min = value;

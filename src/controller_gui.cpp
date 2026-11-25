@@ -49,13 +49,13 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 	 * screen area behind, which smears whatever was drawn before. */
 	NWidget(WWT_PANEL, Colours::Grey),
 		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetStringTip(STR_CONTROLLER_SELECT, STR_NULL), SetFill(1, 0),
+			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(380, 12), SetStringTip(STR_CONTROLLER_SELECT, STR_NULL), SetFill(1, 0),
 			NWidget(NWID_HORIZONTAL), SetPIP(0, WidgetDimensions::unscaled.hsep_wide, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_MAP), SetMinimalSize(90, 12), SetStringTip(STR_CONTROLLER_MAP, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_SAVE), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_SAVE, STR_NULL),
 			EndContainer(),
-			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(280, 260), SetFill(1, 1),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(460, 260), SetFill(1, 1),
 		EndContainer(),
 	EndContainer(),
 };
@@ -162,6 +162,12 @@ struct ControllerWindow : Window {
 			y += line_height;
 		}
 
+		std::string last_input = GetControllerMappingLastInput();
+		if (!last_input.empty()) {
+			DrawString(r.left, r.right, y, last_input, TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
+			y += line_height;
+		}
+
 		auto rows = GetControllerMappingRows();
 		size_t current = rows.size();
 		bool any_set = false;
@@ -182,8 +188,8 @@ struct ControllerWindow : Window {
 				TextColour colour = rows[i].second == "—"
 					? TextColour::Grey
 					: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
-				DrawString(r.left, r.left + 150, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
-				DrawString(r.left + 150, r.right, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left, r.left + 220, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left + 220, r.right, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
 				y += line_height;
 			}
 		}

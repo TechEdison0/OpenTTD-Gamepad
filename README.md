@@ -37,9 +37,10 @@ This is a separate, self-contained distribution.
 
 **Maturity:** experimental and generally unverified. Builds are reproducible from this
 repository, but device coverage is limited (desktop Linux, the x86_64 Windows build
-under Wine, Android phones such as the Galaxy S25 Ultra). Test builds additionally show
-a **Controller diagnostics** window with raw gamepad events. Do not use this fork for
-anything you care about losing; use upstream releases for that.
+under Wine, Android phones such as the Galaxy S25 Ultra). Pre-release test builds show a
+**Controller diagnostics** window with raw gamepad events unless they are compiled with
+`-DGAMEPAD_DEBUG_OFF` (the published builds are). Do not use this fork for anything you
+care about losing; use upstream releases for that.
 
 Base pin: upstream **`16.0-RC1`** (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`),
 rebased onto future upstream release tags only — never nightlies.
@@ -158,30 +159,28 @@ Every build is pinned to:
 - this fork's own commits on top: build/packaging wiring, audio fixes, Windows SDL
   linkage for controller input, and the controller probe described below.
 
-### Current test release — controller event verification
+### Current test release — controller GUI
 
-First release carrying a gamepad feature: raw controller events are captured by a
-shared SDL backend and shown in a native OpenTTD window, **Controller diagnostics**,
-which lists connected devices (name, SDL GUID, axes/buttons/hats) and streams
-connect/disconnect/axis/button/hat events live. The window opens automatically in these
-test builds; there is no configuration step.
+`v20261125-c1b-controller-gui-test` adds the first real controller feature: a standalone
+**Controller** window on the main menu (directly below **Options**), with the
+selected-controller label, a controller dropdown, **Map Controller / Load / Save**
+buttons and a plaintext mapping area. Selection, persistence and mapping are *not*
+wired yet — this is the UI milestone (C1b). These builds are compiled with
+`-DGAMEPAD_DEBUG_OFF`, so the C0 **Controller diagnostics** window is completely
+absent; only the real Controller menu remains.
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
-gamepad registry flags); Android install the APK. Controller input does not depend on
-the video driver, so the native win32 path is used where it is the default and a plain
-start shows controllers too.
+gamepad registry flags, video stays on win32); Android install the APK. Open the main
+menu and pick **Controller**.
 
-Verified on desktop Linux, the x86_64 Windows build under Wine 9.0, and a Samsung
-Galaxy S25 Ultra. Waydroid can host the app for layout checks but does not forward
-Bluetooth gamepads.
-
-Known limits: mappings/bindings and D-pad navigation are not implemented yet; the
-window is scaffolding for that work and disappears from release builds compiled with
-`-DGAMEPAD_DEBUG_OFF`. Base graphics/sound/music sets are not included.
+Verified on desktop Linux, the x86_64 Windows build under Wine, and a Samsung Galaxy S25
+Ultra. Known limits: the dropdown holds only a placeholder entry, `controller.cfg` is
+not written yet, and base graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261124-c0-gamepad-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1b-controller-gui-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |
 
 Downloads are attached to the

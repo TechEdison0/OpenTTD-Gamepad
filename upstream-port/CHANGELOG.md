@@ -3,6 +3,45 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-25 — `v20261125-c1b-controller-gui-test` (pre-release, controller GUI)
+
+Cut from `main` at **`dda3695419`** (commits `1336eae5ad`, `dda3695419`); Linux, Windows
+and Android artifacts were built from that same revision, with
+`-DGAMEPAD_DEBUG_OFF` on all three targets.
+
+### Added
+
+- **Controller settings window** (`src/controller_gui.{h,cpp}`), a standalone window
+  opened from a new **Controller** entry on the main menu directly below **Options**
+  (reusing the cog sprite). It carries the selected-controller label, the controller
+  dropdown (native list, placeholder until the device registry lands), the
+  **Map Controller / Load / Save** buttons and a plaintext mapping area. No mapping or
+  persistence logic yet — that is C1c/C1d.
+- The window has its own GUI files rather than an edit to `options_gui.cpp`, keeping the
+  fork diff small and rebase-friendly.
+- Opaque `WWT_PANEL` background: the earlier per-widget fill left uncovered screen area
+  behind the window and smeared whatever was drawn before.
+
+### Changed
+
+- The diagnostics window and raw-event logging are compiled out of these builds via
+  `-DGAMEPAD_DEBUG_OFF`; the C0-era debug screen is absent everywhere, including the
+  Android auto-open path.
+- Android: `useLegacyPackaging = false` (candidate fix for the Waydroid install failure
+  on the duo; see `research/TOUCH-PLAN.md`/skill notes).
+
+### Verified
+
+- Desktop Linux, the x86_64 Windows build under Wine, and the Galaxy S25 Ultra: menu
+  entry opens the window; dropdown shows its placeholder; no diagnostics window
+  anywhere.
+
+### Known limitations
+
+- Device selection does nothing beyond the placeholder entry; `controller.cfg` is not
+  written yet; no mappings.
+- Base graphics/sound/music sets are not shipped.
+
 ## 2026-11-24 — `v20261124-c0-gamepad-test` (pre-release, controller event verification)
 
 Cut from `main` at **`637364b8ad`**; the Linux, Windows and Android artifacts in this

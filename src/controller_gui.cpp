@@ -16,7 +16,6 @@
 #include "controller_gui.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/controller_config.h"
-#include "debug.h"
 #include "window_gui.h"
 #include "window_func.h"
 #include "gfx_func.h"
@@ -83,7 +82,6 @@ struct ControllerWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		Debug(Facility::Misc, Severity::Critical, "ControllerWindow: OnClick widget {}", widget);
 		switch (widget) {
 			case WID_CT_DROPDOWN: {
 				DropDownList list;
@@ -118,7 +116,6 @@ struct ControllerWindow : Window {
 
 	void OnDropdownSelect(WidgetID widget, int index, [[maybe_unused]] int click_result) override
 	{
-		Debug(Facility::Misc, Severity::Critical, "ControllerWindow: OnDropdownSelect widget {} index {}", widget, index);
 		if (widget != WID_CT_DROPDOWN) return;
 		SetGamepadSelection(index >= 0 && static_cast<size_t>(index) < GetGamepadCount() ? index : -1);
 		this->SetDirty();

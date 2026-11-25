@@ -171,11 +171,15 @@ absent; only the real Controller menu remains.
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
 gamepad registry flags, video stays on win32); Android install the APK. Open the main
-menu and pick **Controller**.
+menu and pick **Controller**: the dropdown lists connected controllers, selecting one
+updates the label, and **Load**/**Save** work on `controller.cfg` beside `hotkeys.cfg`
+in the OpenTTD config directory (`~/.config/openttd/` on Linux with XDG, the personal
+dir on other platforms). The last config action is shown under the mapping area.
 
 Verified on desktop Linux, the x86_64 Windows build under Wine, and a Samsung Galaxy S25
-Ultra. Known limits: the dropdown holds only a placeholder entry, `controller.cfg` is
-not written yet, and base graphics/sound/music sets are not included.
+Ultra. Known limits: mappings are not captured yet — `controller.cfg` stores the
+selection plus an empty mapping list until C1d — and base graphics/sound/music sets are
+not included.
 
 | Release | Artifacts |
 |---|---|

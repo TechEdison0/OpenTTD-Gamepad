@@ -167,7 +167,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261125-c1d-controller-mapping-test` | Linux x86_64 (folder + `.zip`), Windows x86_64 (folder + `.zip`, includes `wine_launch.sh`), Android `arm64-v8a` debug APK |
+| `v20261125-c1d-controller-mapping-test` | controller mapping capture, persistence per controller |
 | `v20261125-c1c-controller-selection-test` | controller detection, selection and persistence |
 | `v20261125-c1b-controller-gui-test` | Controller window UI milestone (no logic behind it) |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |

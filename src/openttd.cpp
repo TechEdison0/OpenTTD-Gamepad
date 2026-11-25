@@ -11,6 +11,7 @@
 
 #include "blitter/factory.hpp"
 #include "gamepad/gamepad.h"
+#include "gamepad/controller_config.h"
 #include "sound/sound_driver.hpp"
 #include "music/music_driver.hpp"
 #include "video/video_driver.hpp"
@@ -798,6 +799,7 @@ int openttd_main(std::span<std::string_view> arguments)
 	RequestNewGRFScan(scanner.release());
 
 	StartGamepads();
+	LoadControllerConfig();
 
 	VideoDriver::GetInstance()->MainLoop();
 

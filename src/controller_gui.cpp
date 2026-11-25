@@ -9,7 +9,7 @@
  * If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file controller_gui.cpp Controller selection and mapping window (chunk C1b: UI only). */
+/** @file controller_gui.cpp Controller selection and mapping window (chunk C1). */
 
 #include "stdafx.h"
 
@@ -32,8 +32,7 @@
 /** Widgets of the controller window. */
 enum ControllerWidgets {
 	WID_CT_CAPTION,  ///< Window caption.
-	WID_CT_LABEL,    ///< "Selected Controller:" label.
-	WID_CT_DROPDOWN, ///< Controller selection dropdown.
+	WID_CT_DROPDOWN, ///< Controller selection dropdown (caption shows the selection).
 	WID_CT_MAP,      ///< "Map Controller" button.
 	WID_CT_LOAD,     ///< "Load" button.
 	WID_CT_SAVE,     ///< "Save" button.
@@ -50,7 +49,6 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 	 * screen area behind, which smears whatever was drawn before. */
 	NWidget(WWT_PANEL, Colours::Grey),
 		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LABEL), SetMinimalSize(280, 10), SetFill(1, 0),
 			NWidget(WWT_DROPDOWN, Colours::Grey, WID_CT_DROPDOWN), SetMinimalSize(280, 12), SetStringTip(STR_CONTROLLER_SELECT, STR_NULL), SetFill(1, 0),
 			NWidget(NWID_HORIZONTAL), SetPIP(0, WidgetDimensions::unscaled.hsep_wide, 0),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_MAP), SetMinimalSize(90, 12), SetStringTip(STR_CONTROLLER_MAP, STR_NULL),
@@ -70,9 +68,20 @@ static WindowDesc _controller_desc(
 	_controller_widgets
 );
 
+/** Name of the currently selected controller, or "none". */
+static std::string ControllerSelectedName()
+{
+	int selected = GetGamepadSelection();
+	if (selected >= 0 && static_cast<size_t>(selected) < GetGamepadCount()) {
+		std::string name = GetGamepadInfo(static_cast<size_t>(selected)).name;
+		if (!name.empty()) return name;
+	}
+	return std::string{GetString(STR_CONTROLLER_NONE)};
+}
+
 /**
- * Controller selection and mapping window. Chunk C1b ships the layout only; device
- * population, config persistence and the mapping flow follow in C1c/C1d.
+ * Controller selection and mapping window. Chunk C1c wires the device registry and
+ * controller.cfg; the mapping flow follows in C1d.
  */
 struct ControllerWindow : Window {
 	ControllerWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
@@ -80,25 +89,35 @@ struct ControllerWindow : Window {
 		this->InitNested(number);
 	}
 
+	void OpenControllerList()
+	{
+		DropDownList list;
+		size_t count = GetGamepadCount();
+		if (count == 0) {
+			list.push_back(MakeDropDownListStringItem(std::string{GetString(STR_CONTROLLER_NONE)}, 0));
+		} else {
+			for (size_t i = 0; i < count; i++) {
+				GamepadInfo info = GetGamepadInfo(i);
+				std::string label = info.name.empty() ? std::string{GetString(STR_CONTROLLER_NONE)} : info.name;
+				list.push_back(MakeDropDownListStringItem(std::move(label), static_cast<int>(i)));
+			}
+		}
+		int selected = GetGamepadSelection();
+		ShowDropDownList(this, std::move(list), selected >= 0 ? selected : 0, WID_CT_DROPDOWN);
+	}
+
+	std::string GetWidgetString(WidgetID widget, StringID stringid) const override
+	{
+		if (widget == WID_CT_DROPDOWN) return ControllerSelectedName();
+		return Window::GetWidgetString(widget, stringid);
+	}
+
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
 		switch (widget) {
-			case WID_CT_DROPDOWN: {
-				DropDownList list;
-				size_t count = GetGamepadCount();
-				if (count == 0) {
-					list.push_back(MakeDropDownListStringItem(std::string{GetString(STR_CONTROLLER_NONE)}, 0));
-				} else {
-					for (size_t i = 0; i < count; i++) {
-						GamepadInfo info = GetGamepadInfo(i);
-						std::string label = info.name.empty() ? std::string{GetString(STR_CONTROLLER_NONE)} : info.name;
-						list.push_back(MakeDropDownListStringItem(std::move(label), static_cast<int>(i)));
-					}
-				}
-				int selected = GetGamepadSelection();
-				ShowDropDownList(this, std::move(list), selected >= 0 ? selected : 0, WID_CT_DROPDOWN);
+			case WID_CT_DROPDOWN:
+				this->OpenControllerList();
 				break;
-			}
 
 			case WID_CT_LOAD:
 				LoadControllerConfig();
@@ -123,16 +142,7 @@ struct ControllerWindow : Window {
 
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
-		if (widget == WID_CT_LABEL) {
-			std::string name = std::string{GetString(STR_CONTROLLER_NONE)};
-			int selected = GetGamepadSelection();
-			if (selected >= 0 && static_cast<size_t>(selected) < GetGamepadCount()) {
-				name = GetGamepadInfo(static_cast<size_t>(selected)).name;
-				if (name.empty()) name = std::string{GetString(STR_CONTROLLER_NONE)};
-			}
-			DrawString(r.left, r.right, r.top, GetString(STR_CONTROLLER_SELECTED, name),
-				TextColour::White, AlignmentH::Start, false, FontSize::Normal);
-		} else if (widget == WID_CT_LIST) {
+		if (widget == WID_CT_LIST) {
 			GfxFillRect(r, PC_BLACK);
 			DrawString(r.left, r.right, r.top, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Small);
 			std::string status = GetControllerConfigStatus();

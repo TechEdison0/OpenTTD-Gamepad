@@ -437,7 +437,10 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 				}
 				baseline = _mapping_axis_baseline_set[index] ? _mapping_axis_baselines[index] : value;
 			}
-			int16_t delta = value - baseline;
+			/* Triggers rest at -32767 and close at +32767, so the delta reaches
+			 * 65534 and must not be computed in int16_t (it would wrap to -2,
+			 * which never passes the engagement threshold). */
+			int delta = static_cast<int>(value) - static_cast<int>(baseline);
 
 			if (!_mapping_axis_engaged) {
 				if (std::abs(delta) >= _mapping_axis_threshold) {

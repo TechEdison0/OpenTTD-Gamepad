@@ -16,6 +16,7 @@
 #include "controller_config.h"
 #include "gamepad.h"
 
+#include "../debug.h"
 #include "../ini_type.h"
 
 #include <array>
@@ -24,6 +25,9 @@
 #include "../safeguards.h"
 
 std::string _controller_file;
+
+/** Last action result, surfaced in the Controller window status line. */
+static std::string _controller_status;
 
 /** Mapping keys stored per controller; values stay empty until C1d fills them. */
 static constexpr std::array<const char *, 20> _mapping_keys = {
@@ -36,6 +40,8 @@ static constexpr std::array<const char *, 20> _mapping_keys = {
 /** Write the selection plus the selected controller's (currently empty) mapping list. */
 static void WriteConfigFile(const std::string &selected_guid)
 {
+	Debug(Facility::Misc, Severity::Critical, "ControllerConfig: writing '{}' guid '{}'", _controller_file, selected_guid);
+
 	IniFile ini{};
 	ini.LoadFromDisk(_controller_file, Subdirectory::None);
 
@@ -49,11 +55,15 @@ static void WriteConfigFile(const std::string &selected_guid)
 		}
 	}
 
-	ini.SaveToDisk(_controller_file);
+	bool saved = ini.SaveToDisk(_controller_file);
+	_controller_status = fmt::format("save '{}' -> {}", _controller_file, saved ? "ok" : "FAILED");
+	Debug(Facility::Misc, Severity::Critical, "ControllerConfig: {} ", _controller_status);
 }
 
 int LoadControllerConfig()
 {
+	Debug(Facility::Misc, Severity::Critical, "ControllerConfig: loading '{}'", _controller_file);
+
 	IniFile ini{};
 	ini.LoadFromDisk(_controller_file, Subdirectory::None);
 
@@ -75,6 +85,7 @@ int LoadControllerConfig()
 		}
 	}
 	SetGamepadSelection(index);
+	_controller_status = fmt::format("load '{}' -> index {}", _controller_file, index);
 
 	/* No entry yet for this controller: create a fresh, empty one. */
 	if (index >= 0) {
@@ -92,4 +103,9 @@ void SaveControllerConfig()
 		guid = GetGamepadInfo(static_cast<size_t>(index)).guid;
 	}
 	WriteConfigFile(guid);
+}
+
+std::string GetControllerConfigStatus()
+{
+	return _controller_status;
 }

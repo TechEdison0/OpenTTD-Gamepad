@@ -36,4 +36,7 @@ int LoadControllerConfig();
  */
 void SaveControllerConfig();
 
+/** Result of the last load/save, shown in the window while diagnosing C1c. */
+std::string GetControllerConfigStatus();
+
 #endif /* GAMEPAD_CONTROLLER_CONFIG_H */

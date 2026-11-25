@@ -16,6 +16,8 @@ Cut from `main`; Linux, Windows and Android artifacts built from that revision,
   is cleared on selection change, removal and shutdown; it does not depend on the
   diagnostics window.
 - Column header (`Control / Mapping / Live`) and green/grey highlighting of active rows.
+- Column boundaries scale with the widget width (38% / 38% / 24%) and the dense rows
+  use small text, so nothing is clipped on high-DPI screens.
 
 ### Fixed
 

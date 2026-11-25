@@ -166,16 +166,23 @@ public:
 		if (widget != WID_CT_LIST) return;
 		GfxFillRect(r, PC_BLACK);
 
-		const int line_height = GetCharacterHeight(FontSize::Normal);
+		/* Column boundaries are fractions of the widget, not fixed pixels: the window is
+		 * scaled on high-DPI devices, so a static offset clips text on Android. Small
+		 * text keeps the longest axis value readable in the middle column. */
+		const int header_height = GetCharacterHeight(FontSize::Normal);
+		const int row_height = GetCharacterHeight(FontSize::Small);
+		const int list_width = r.right - r.left;
+		const int label_end = r.left + list_width * 38 / 100;
+		const int value_end = r.left + list_width * 76 / 100;
 		int y = r.top;
 
 		DrawString(r.left, r.right, y, "Control / Mapping / Live", TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
-		y += line_height;
+		y += header_height;
 
 		std::string prompt = GetControllerMappingPrompt();
 		if (!prompt.empty()) {
 			DrawString(r.left, r.right, y, prompt, TextColour::Yellow, AlignmentH::Start, false, FontSize::Normal);
-			y += line_height;
+			y += header_height;
 		}
 
 		auto rows = GetControllerMappingRows();
@@ -191,27 +198,27 @@ public:
 
 		if (!any_set && prompt.empty()) {
 			DrawString(r.left, r.right, y, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
-			y += line_height;
+			y += header_height;
 		} else {
 			for (size_t i = 0; i < rows.size(); i++) {
-				if (y + line_height > r.bottom) break;
+				if (y + row_height > r.bottom) break;
 				TextColour colour = rows[i].second == "—"
 					? TextColour::Grey
 					: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
-				DrawString(r.left, r.left + 200, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
-				DrawString(r.left + 200, r.left + 370, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left, label_end, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Small);
+				DrawString(label_end, value_end, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Small);
 				bool active = IsControllerMappingControlActive(i);
 				std::string live = GetControllerMappingLiveText(i);
-				DrawString(r.left + 370, r.right, y, live,
-						active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Normal);
-				y += line_height;
+				DrawString(value_end, r.right, y, live,
+						active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Small);
+				y += row_height;
 			}
 		}
 
 		std::string status = GetControllerConfigStatus();
 		if (!status.empty()) {
-			DrawString(r.left, r.right, r.bottom - line_height, status,
-				TextColour::White, AlignmentH::Start, false, FontSize::Normal);
+			DrawString(r.left, r.right, r.bottom - header_height, status,
+					TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 		}
 	}
 };

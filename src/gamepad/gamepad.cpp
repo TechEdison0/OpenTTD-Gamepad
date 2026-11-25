@@ -22,6 +22,7 @@
 #include <SDL.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <string>
 #include <utility>
@@ -59,6 +60,30 @@ static std::vector<GamepadSlot> _gamepad_slots;
 
 /** Controller selected in the Controller window; -1 means none. */
 static int _gamepad_selection = -1;
+
+/**
+ * Live state of the selected controller's raw controls. Everything else is discarded,
+ * so the Controller window can show which mapped control is currently active without
+ * touching the diagnostics feed (which is compiled out of release builds).
+ */
+static std::array<bool, 128> _gamepad_live_buttons = {};
+static std::array<int16_t, 64> _gamepad_live_axes = {};
+static std::array<uint8_t, 16> _gamepad_live_hats = {};
+
+/** Forget the previous controller's control state. */
+static void ClearGamepadLiveState()
+{
+	_gamepad_live_buttons.fill(false);
+	_gamepad_live_axes.fill(0);
+	_gamepad_live_hats.fill(SDL_HAT_CENTERED);
+}
+
+/** Whether an SDL joystick event came from the selected controller. */
+static bool IsSelectedGamepad(SDL_JoystickID which)
+{
+	if (_gamepad_selection < 0 || static_cast<size_t>(_gamepad_selection) >= _gamepad_slots.size()) return false;
+	return _gamepad_slots[_gamepad_selection].instance_id == which;
+}
 
 /** Close whichever handle owns the joystick. */
 static void CloseGamepad(GamepadSlot &slot)
@@ -191,6 +216,7 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 			if (it != std::end(_gamepad_slots)) {
 				CloseGamepad(*it);
 				_gamepad_slots.erase(it);
+				ClearGamepadLiveState();
 			}
 			if (_gamepad_selection >= static_cast<int>(_gamepad_slots.size())) _gamepad_selection = -1;
 			GamepadDebugRecord(fmt::format("disconnected (device id {})", event->jdevice.which));
@@ -248,6 +274,34 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 
 		default: break;
 	}
+
+	/* Live control state drives the visual feedback in the Controller window. It is
+	 * tracked independently of the diagnostics feed and the mapping flow. */
+	switch (event->type) {
+		case SDL_JOYBUTTONDOWN:
+		case SDL_JOYBUTTONUP:
+			if (IsSelectedGamepad(event->jbutton.which) && event->jbutton.button < _gamepad_live_buttons.size()) {
+				_gamepad_live_buttons[event->jbutton.button] = event->type == SDL_JOYBUTTONDOWN;
+			}
+			break;
+
+		case SDL_JOYAXISMOTION: {
+			const GamepadSlot *slot = FindSlot(event->jaxis.which);
+			if (slot == nullptr || std::ranges::find(slot->usable_axes, event->jaxis.axis) == std::end(slot->usable_axes)) break;
+			if (IsSelectedGamepad(event->jaxis.which) && event->jaxis.axis < _gamepad_live_axes.size()) {
+				_gamepad_live_axes[event->jaxis.axis] = event->jaxis.value;
+			}
+			break;
+		}
+
+		case SDL_JOYHATMOTION:
+			if (IsSelectedGamepad(event->jhat.which) && event->jhat.hat < _gamepad_live_hats.size()) {
+				_gamepad_live_hats[event->jhat.hat] = event->jhat.value;
+			}
+			break;
+
+		default: break;
+	}
 	return 0;
 }
 
@@ -287,6 +341,7 @@ void StopGamepads()
 		CloseGamepad(slot);
 	}
 	_gamepad_slots.clear();
+	ClearGamepadLiveState();
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK)) SDL_DelEventWatch(GamepadEventFilter, nullptr);
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER)) SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
@@ -328,6 +383,22 @@ void SetGamepadSelection(int index)
 {
 	if (index < -1 || index >= static_cast<int>(_gamepad_slots.size())) return;
 	_gamepad_selection = index;
+	ClearGamepadLiveState();
+}
+
+bool GetGamepadLiveButton(uint8_t index)
+{
+	return index < _gamepad_live_buttons.size() && _gamepad_live_buttons[index];
+}
+
+int16_t GetGamepadLiveAxis(uint8_t index)
+{
+	return index < _gamepad_live_axes.size() ? _gamepad_live_axes[index] : 0;
+}
+
+uint8_t GetGamepadLiveHat(uint8_t index)
+{
+	return index < _gamepad_live_hats.size() ? _gamepad_live_hats[index] : static_cast<uint8_t>(SDL_HAT_CENTERED);
 }
 
 void UpdateGamepads()

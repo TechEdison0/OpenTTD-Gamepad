@@ -67,4 +67,13 @@ int GetGamepadSelection();
  */
 void SetGamepadSelection(int index);
 
+/** Whether a raw button of the selected controller is currently held. */
+bool GetGamepadLiveButton(uint8_t index);
+
+/** Current value of a raw axis of the selected controller (0 when unavailable). */
+int16_t GetGamepadLiveAxis(uint8_t index);
+
+/** Current hat bitfield of the selected controller (centered when unavailable). */
+uint8_t GetGamepadLiveHat(uint8_t index);
+
 #endif /* GAMEPAD_GAMEPAD_H */

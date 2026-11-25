@@ -91,6 +91,14 @@ std::string GetControllerMappingPrompt();
 std::vector<std::pair<std::string, std::string>> GetControllerMappingRows();
 
 /**
+ * Whether a mapped control is currently active on the selected controller.
+ * Buttons use their pressed state, axes compare against the center of their calibrated
+ * range (with a quarter-range margin), hats test the stored direction bits.
+ * @param step Position in the mapping list.
+ */
+bool IsControllerMappingControlActive(size_t step);
+
+/**
  * Start capturing a mapping for the selected controller.
  *
  * @return Whether the flow started (a controller must be selected).

@@ -84,9 +84,22 @@ static std::string ControllerSelectedName()
  * controller.cfg; the mapping flow follows in C1d.
  */
 struct ControllerWindow : Window {
+private:
+	uint accumulated_ms = 0; ///< Time since the last live-state repaint.
+
+public:
 	ControllerWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
 	{
 		this->InitNested(number);
+	}
+
+	void OnRealtimeTick(uint delta_ms) override
+	{
+		this->accumulated_ms += delta_ms;
+		if (this->accumulated_ms >= 100) {
+			this->accumulated_ms = 0;
+			this->SetDirty();
+		}
 	}
 
 	void OpenControllerList()
@@ -156,6 +169,9 @@ struct ControllerWindow : Window {
 		const int line_height = GetCharacterHeight(FontSize::Normal);
 		int y = r.top;
 
+		DrawString(r.left, r.right, y, "Control / Mapping / Live", TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
+		y += line_height;
+
 		std::string prompt = GetControllerMappingPrompt();
 		if (!prompt.empty()) {
 			DrawString(r.left, r.right, y, prompt, TextColour::Yellow, AlignmentH::Start, false, FontSize::Normal);
@@ -182,8 +198,11 @@ struct ControllerWindow : Window {
 				TextColour colour = rows[i].second == "—"
 					? TextColour::Grey
 					: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
-				DrawString(r.left, r.left + 220, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
-				DrawString(r.left + 220, r.right, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left, r.left + 200, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left + 200, r.left + 370, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
+				bool active = IsControllerMappingControlActive(i);
+				DrawString(r.left + 370, r.right, y, active ? "ON" : "-",
+						active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Normal);
 				y += line_height;
 			}
 		}

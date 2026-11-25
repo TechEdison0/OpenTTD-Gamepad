@@ -14,6 +14,7 @@
 #include "../stdafx.h"
 
 #include "gamepad.h"
+#include "controller_config.h"
 
 #include "../debug.h"
 #include "../gamepad_debug.h"
@@ -230,8 +231,26 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 			}
 			break;
 	}
+
+	/* The mapping flow needs raw events even in builds with diagnostics compiled out. */
+	switch (event->type) {
+		case SDL_JOYAXISMOTION:
+			ControllerMappingEvent(ControllerInputEventType::AxisMotion, event->jaxis.axis, event->jaxis.value);
+			break;
+
+		case SDL_JOYBUTTONUP:
+			ControllerMappingEvent(ControllerInputEventType::ButtonUp, event->jbutton.button, 0);
+			break;
+
+		case SDL_JOYHATMOTION:
+			ControllerMappingEvent(ControllerInputEventType::HatMotion, event->jhat.hat, event->jhat.value);
+			break;
+
+		default: break;
+	}
 	return 0;
 }
+
 
 void StartGamepads()
 {

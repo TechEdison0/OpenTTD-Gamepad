@@ -55,7 +55,7 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_SAVE), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_SAVE, STR_NULL),
 			EndContainer(),
-			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(280, 120), SetFill(1, 1),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(280, 260), SetFill(1, 1),
 		EndContainer(),
 	EndContainer(),
 };
@@ -109,6 +109,7 @@ struct ControllerWindow : Window {
 	std::string GetWidgetString(WidgetID widget, StringID stringid) const override
 	{
 		if (widget == WID_CT_DROPDOWN) return ControllerSelectedName();
+		if (widget == WID_CT_MAP && IsControllerMapping()) return std::string{GetString(STR_CONTROLLER_CANCEL)};
 		return Window::GetWidgetString(widget, stringid);
 	}
 
@@ -116,15 +117,22 @@ struct ControllerWindow : Window {
 	{
 		switch (widget) {
 			case WID_CT_DROPDOWN:
-				this->OpenControllerList();
+				if (!IsControllerMapping()) this->OpenControllerList();
+				break;
+
+			case WID_CT_MAP:
+				if (IsControllerMapping()) CancelControllerMapping(); else StartControllerMapping();
+				this->SetDirty();
 				break;
 
 			case WID_CT_LOAD:
+				if (IsControllerMapping()) break;
 				LoadControllerConfig();
 				this->SetDirty();
 				break;
 
 			case WID_CT_SAVE:
+				if (IsControllerMapping()) break;
 				SaveControllerConfig();
 				this->SetDirty();
 				break;
@@ -135,21 +143,55 @@ struct ControllerWindow : Window {
 
 	void OnDropdownSelect(WidgetID widget, int index, [[maybe_unused]] int click_result) override
 	{
-		if (widget != WID_CT_DROPDOWN) return;
+		if (widget != WID_CT_DROPDOWN || IsControllerMapping()) return;
 		SetGamepadSelection(index >= 0 && static_cast<size_t>(index) < GetGamepadCount() ? index : -1);
 		this->SetDirty();
 	}
 
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
-		if (widget == WID_CT_LIST) {
-			GfxFillRect(r, PC_BLACK);
-			DrawString(r.left, r.right, r.top, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
-			std::string status = GetControllerConfigStatus();
-			if (!status.empty()) {
-				DrawString(r.left, r.right, r.top + GetCharacterHeight(FontSize::Normal), status,
-					TextColour::White, AlignmentH::Start, false, FontSize::Normal);
+		if (widget != WID_CT_LIST) return;
+		GfxFillRect(r, PC_BLACK);
+
+		const int line_height = GetCharacterHeight(FontSize::Normal);
+		int y = r.top;
+
+		std::string prompt = GetControllerMappingPrompt();
+		if (!prompt.empty()) {
+			DrawString(r.left, r.right, y, prompt, TextColour::Yellow, AlignmentH::Start, false, FontSize::Normal);
+			y += line_height;
+		}
+
+		auto rows = GetControllerMappingRows();
+		size_t current = rows.size();
+		bool any_set = false;
+		for (size_t i = 0; i < rows.size(); i++) {
+			if (rows[i].second == "—") {
+				current = i; /* the step currently being captured */
+				break;
 			}
+			any_set = true;
+		}
+
+		if (!any_set && prompt.empty()) {
+			DrawString(r.left, r.right, y, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
+			y += line_height;
+		} else {
+			for (size_t i = 0; i < rows.size(); i++) {
+				if (y + line_height > r.bottom) break;
+				TextColour colour = rows[i].second == "—"
+					? TextColour::Grey
+					: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
+				DrawString(r.left, r.left + 150, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
+				DrawString(r.left + 150, r.right, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
+				y += line_height;
+			}
+		}
+
+		std::string status = GetControllerConfigStatus();
+		if (!status.empty()) {
+			DrawString(r.left, r.right, r.bottom - line_height, status,
+				TextColour::White, AlignmentH::Start, false, FontSize::Normal);
 		}
 	}
 };

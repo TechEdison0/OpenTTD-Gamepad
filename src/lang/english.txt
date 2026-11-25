@@ -6080,6 +6080,7 @@ STR_CONTROLLER_CAPTION                                          :{BLACK}Controll
 STR_CONTROLLER_NONE                                              :{BLACK}none
 STR_CONTROLLER_SELECTED                                         :{BLACK}Selected Controller: {STRING}
 STR_CONTROLLER_MAP                                              :{BLACK}Map Controller
+STR_CONTROLLER_CANCEL                                           :{BLACK}Cancel
 STR_CONTROLLER_SELECT                                            :{BLACK}Select
 STR_CONTROLLER_LOAD                                             :{BLACK}Load
 STR_CONTROLLER_SAVE                                             :{BLACK}Save

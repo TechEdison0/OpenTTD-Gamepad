@@ -65,10 +65,10 @@ static constexpr std::array<MappingStepDef, 21> _mapping_steps = {{
 	{"dpdown",        "D-pad down",     MAPPING_STEP_DPAD},
 	{"dpleft",        "D-pad left",     MAPPING_STEP_DPAD},
 	{"dpright",       "D-pad right",    MAPPING_STEP_DPAD},
-	{"leftx",         "Left stick X",   MAPPING_STEP_AXIS},
-	{"lefty",         "Left stick Y",   MAPPING_STEP_AXIS},
-	{"rightx",        "Right stick X",  MAPPING_STEP_AXIS},
-	{"righty",        "Right stick Y",  MAPPING_STEP_AXIS},
+	{"leftx",         "Left stick X (Horizontal)",   MAPPING_STEP_AXIS},
+	{"lefty",         "Left stick Y (Vertical)",     MAPPING_STEP_AXIS},
+	{"rightx",        "Right stick X (Horizontal)",  MAPPING_STEP_AXIS},
+	{"righty",        "Right stick Y (Vertical)",    MAPPING_STEP_AXIS},
 	{"lefttrigger",   "Left trigger",   MAPPING_STEP_TRIGGER},
 	{"righttrigger",  "Right trigger",  MAPPING_STEP_TRIGGER},
 }};
@@ -91,6 +91,8 @@ static int16_t _mapping_axis_min = -32768;
 static int16_t _mapping_axis_max = 32767;
 static uint8_t _mapping_axis_candidate = 0;
 static bool _mapping_axis_engaged = false;
+static std::array<int16_t, 16> _mapping_axis_baselines = {};
+static std::array<bool, 16> _mapping_axis_baseline_set = {};
 
 /** Human-readable name of a hat direction bitfield. */
 static std::string DescribeHatDirection(uint8_t bits)
@@ -232,6 +234,8 @@ static void ResetMappingStepState()
 	_mapping_axis_max = 32767;
 	_mapping_axis_candidate = 0;
 	_mapping_axis_engaged = false;
+	_mapping_axis_baselines.fill(0);
+	_mapping_axis_baseline_set.fill(false);
 }
 
 /** Store the axis tracked during this step and move on. */
@@ -331,8 +335,11 @@ std::string GetControllerMappingPrompt()
 {
 	if (!_mapping_active || _mapping_step >= _mapping_steps.size()) return {};
 	const MappingStepDef &step = _mapping_steps[_mapping_step];
-	const char *verb = (step.flag == MAPPING_STEP_AXIS) ? "Move" : "Press";
-	return fmt::format("{} {} (step {} of {})", verb, step.label, _mapping_step + 1, _mapping_steps.size());
+	if (step.flag == MAPPING_STEP_AXIS) {
+		return fmt::format("Move {} (one direction, then release) - step {} of {}",
+			step.label, _mapping_step + 1, _mapping_steps.size());
+	}
+	return fmt::format("Press {} (step {} of {})", step.label, _mapping_step + 1, _mapping_steps.size());
 }
 
 std::vector<std::pair<std::string, std::string>> GetControllerMappingRows()
@@ -407,13 +414,25 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 			if (value < _mapping_axis_min) _mapping_axis_min = value;
 			if (value > _mapping_axis_max) _mapping_axis_max = value;
 
+			/* Triggers rest at the axis minimum on some pads, so movement is
+			 * measured relative to each axis' resting value. */
+			int16_t baseline = 0;
+			if (index < _mapping_axis_baselines.size()) {
+				if (settled && !_mapping_axis_baseline_set[index]) {
+					_mapping_axis_baseline_set[index] = true;
+					_mapping_axis_baselines[index] = value;
+				}
+				baseline = _mapping_axis_baseline_set[index] ? _mapping_axis_baselines[index] : value;
+			}
+			int16_t delta = value - baseline;
+
 			if (!_mapping_axis_engaged) {
-				if (std::abs(value) >= _mapping_axis_threshold) {
+				if (std::abs(delta) >= _mapping_axis_threshold) {
 					_mapping_axis_engaged = true;
 					_mapping_axis_candidate = index;
 				}
 			} else if (index == _mapping_axis_candidate &&
-					std::abs(value) <= _mapping_axis_threshold / 2) {
+					std::abs(delta) <= _mapping_axis_threshold / 2) {
 				RecordAxisAndAdvance();
 				AdvanceMappingStep();
 			}

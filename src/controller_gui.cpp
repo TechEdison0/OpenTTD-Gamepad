@@ -324,7 +324,7 @@ static constexpr std::initializer_list<NWidgetPart> _controller_guide_widgets = 
 	EndContainer(),
 	NWidget(WWT_PANEL, Colours::Grey, WID_CG_BACKGROUND),
 		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-			NWidget(WWT_EMPTY, Colours::Invalid, WID_CG_CANVAS), SetMinimalSize(480, 300), SetFill(1, 1),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CG_CANVAS), SetMinimalSize(480, 360), SetFill(1, 1),
 		EndContainer(),
 	EndContainer(),
 };
@@ -393,6 +393,7 @@ struct ControllerGuideWindow : Window {
 			"@B L+A to share orders between vehicles",
 			"@B R+A to estimate build cost",
 			"L3+R3 @R Pause or resume the game",
+			"R3 @R Toggle fast forward",
 			"L Stick @R Crosshair",
 			"@B Moves the mouse",
 			"R Stick @R Pan",

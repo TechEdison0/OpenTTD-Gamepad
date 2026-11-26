@@ -17,7 +17,6 @@
 #include "../gfx_func.h"
 #include "../toolbar_gui.h"
 #include "../window_func.h"
-#include "../window_gui.h"
 
 #include "../safeguards.h"
 
@@ -47,26 +46,6 @@ InputSource GetInputSource()
 }
 
 /**
- * Activate the widget under the current cursor position without synthesizing a mouse
- * event. Toolbar buttons use their widget index like any other button.
- * @param right Use the secondary (right-click) handler.
- */
-static void DispatchHoveredClick(bool right)
-{
-	if (!_cursor.in_window) return;
-	Window *w = FindWindowFromPt(_cursor.pos.x, _cursor.pos.y);
-	if (w == nullptr) return;
-	WidgetID widget = GetWidgetFromPos(w, _cursor.pos.x - w->left, _cursor.pos.y - w->top);
-	if (widget == INVALID_WIDGET) return;
-
-	if (right) {
-		w->OnRightClick(_cursor.pos, widget);
-	} else {
-		w->OnClick(_cursor.pos, widget, 1);
-	}
-}
-
-/**
  * Cancel the active tool or text input. HandleBackButton() calls HandleKeypress(WKC_ESC),
  * which would mark keyboard activity, so suppress that mark for the duration of this call.
  */
@@ -93,9 +72,10 @@ void HandleGamepadActions()
 		if (edge[i]) any_edge = true;
 	}
 
-	/* Pause is a chord, not either stick press alone. */
+	/* Pause is a chord, not either stick press alone. R3 alone toggles fast forward. */
 	bool pause = active[GAP_LSTICK] && active[GAP_RSTICK];
 	bool pause_edge = pause && !_pause_held;
+	bool fastforward_edge = edge[GAP_RSTICK] && !active[GAP_LSTICK];
 	_pause_held = pause;
 	_action_held = active;
 
@@ -104,8 +84,9 @@ void HandleGamepadActions()
 
 	/* B close, D-pad focus, stick crosshair/pan and trigger zoom remain placeholders
 	 * until their respective C3/C5 chunks. Only the focus-independent actions dispatch. */
-	if (edge[GAP_A]) DispatchHoveredClick(false);
-	if (edge[GAP_X]) DispatchHoveredClick(true);
+	if (edge[GAP_A]) HandleGamepadClick(false);
+	if (edge[GAP_X]) HandleGamepadClick(true);
 	if (edge[GAP_Y]) CancelToolWithGamepad();
 	if (pause_edge) HandleToolbarHotkey(MTHK_PAUSE);
+	if (fastforward_edge) HandleToolbarHotkey(MTHK_FASTFORWARD);
 }

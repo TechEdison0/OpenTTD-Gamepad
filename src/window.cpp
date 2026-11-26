@@ -3172,6 +3172,18 @@ void HandleMouseEvents()
 }
 
 /**
+ * Dispatch a click from a gamepad action through the real mouse dispatch path. This is
+ * not a synthetic SDL event; it reuses the same viewport/build/drag handling as a real
+ * button press, which a bare OnClick() would bypass.
+ * @param right Use the secondary (right) button.
+ */
+void HandleGamepadClick(bool right)
+{
+	assert(HasModalProgress() || IsLocalCompany());
+	MouseLoop(right ? MouseClick::Right : MouseClick::Left, 0);
+}
+
+/**
  * Check the soft limit of deletable (non vital, non sticky) windows.
  */
 static void CheckSoftLimit()

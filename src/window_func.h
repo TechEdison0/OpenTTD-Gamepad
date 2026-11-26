@@ -34,6 +34,7 @@ void UnInitWindowSystem();
 void ResetWindowSystem();
 void SetupColoursAndInitialWindow();
 void InputLoop();
+void HandleGamepadClick(bool right);
 
 void InvalidateWindowData(WindowClass cls, WindowNumber number, int data = 0, bool gui_scope = false);
 /** @copydoc InvalidateWindowData */

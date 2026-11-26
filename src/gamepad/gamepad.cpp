@@ -403,12 +403,15 @@ bool GetGamepadLiveButton(uint8_t index)
 
 int16_t GetGamepadLiveAxis(uint8_t index)
 {
-	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	if (index >= _gamepad_live_axes.size()) return 0;
+	/* Query SDL before taking our lock: SDL queries can run the event watch, which
+	 * writes the live arrays and would deadlock on a non-recursive mutex. */
+	bool trigger = IsGamepadTriggerAxis(index);
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	/* Trigger axes rest at the bottom of their range, not at zero. Until SDL reports
 	 * the first event they must still read as resting, otherwise a freshly loaded
 	 * config looks permanently active and mapping needs a second click. */
-	if (!_gamepad_live_axis_seen[index] && IsGamepadTriggerAxis(index)) return -32768;
+	if (!_gamepad_live_axis_seen[index] && trigger) return -32768;
 	return _gamepad_live_axes[index];
 }
 

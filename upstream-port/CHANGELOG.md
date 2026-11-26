@@ -18,6 +18,18 @@ file records only what this fork adds.
 - Mutex protection for live button/axis/hat state shared between the SDL event thread and
   the input/game threads.
 
+### Fixed
+
+- A and X now go through the real mouse dispatch path (`HandleGamepadClick()` →
+  `MouseLoop()`), so build placement, drag-build and context menus behave like real
+  clicks. A bare `OnClick()` had bypassed viewport handling.
+- R3 alone toggles fast forward via `MTHK_FASTFORWARD`; L3+R3 still pauses. The Controller
+  guide and mapping descriptions now list R3.
+- Android freeze after several inputs: `GetGamepadLiveAxis()` no longer calls SDL bind
+  queries while holding the live-state mutex. SDL queries can run the event watch, which
+  writes the same arrays and would self-deadlock.
+- Y cancel no longer marks keyboard activity, so the pad keeps input priority.
+
 ### Placeholders
 
 - B close, D-pad focus movement, stick crosshair/pan and trigger zoom remain documented

@@ -18,6 +18,8 @@
 #include "../toolbar_gui.h"
 #include "../window_func.h"
 
+#include <cmath>
+
 #include "../safeguards.h"
 
 /** Mapping slots used by the C2 action dispatch. */
@@ -80,6 +82,27 @@ void GetGamepadModifiers(bool &ctrl, bool &shift)
 	shift = _shift_from_gamepad;
 }
 
+void ApplyGamepadStickResponse(int x, int y, int speed, int &out_x, int &out_y)
+{
+	out_x = 0;
+	out_y = 0;
+
+	/* Scaled radial deadzone: rescale after removing the deadzone so the stick does
+	 * not jump from 0 to full sensitivity at the edge. Then gamma 2 keeps the first
+	 * quarter of travel fine and ramps the remaining three quarters quickly. */
+	static constexpr double DEADZONE = 15.0;
+	double magnitude = std::sqrt(static_cast<double>(x * x + y * y));
+	if (magnitude <= DEADZONE) return;
+
+	double scaled = (magnitude - DEADZONE) * 100.0 / (100.0 - DEADZONE);
+	if (scaled > 100.0) scaled = 100.0;
+	double curved = scaled * scaled / 100.0;
+	double output = curved * speed / 100.0;
+	double ratio = output / magnitude;
+	out_x = static_cast<int>(std::lround(x * ratio));
+	out_y = static_cast<int>(std::lround(y * ratio));
+}
+
 void MoveGamepadCursor(int delta_x, int delta_y)
 {
 	int new_x = _cursor.pos.x + delta_x;
@@ -118,18 +141,13 @@ void HandleGamepadActions()
 		active[i] = IsControllerMappingControlActive(i);
 	}
 
-	/* Left stick is a direct crosshair. C3 D-pad snapping will reuse MoveGamepadCursor()
-	 * with an exact widget-centre delta instead of this analogue speed. */
-	static constexpr int DEADZONE = 15;
-	static constexpr int SPEED = 12; // pixels per tick at full deflection
-	int stick_x = GetControllerMappingAxisValue(GAP_LSTICK_X);
-	int stick_y = GetControllerMappingAxisValue(GAP_LSTICK_Y);
+	/* Left stick is a direct crosshair. C4 will call the same response helper for
+	 * right-stick pan. */
+	static constexpr int CROSSHAIR_SPEED = 12; // pixels per tick at full deflection
 	int delta_x = 0;
 	int delta_y = 0;
-	if (stick_x > DEADZONE) delta_x = (stick_x - DEADZONE) * SPEED / (100 - DEADZONE);
-	if (stick_x < -DEADZONE) delta_x = (stick_x + DEADZONE) * SPEED / (100 - DEADZONE);
-	if (stick_y > DEADZONE) delta_y = (stick_y - DEADZONE) * SPEED / (100 - DEADZONE);
-	if (stick_y < -DEADZONE) delta_y = (stick_y + DEADZONE) * SPEED / (100 - DEADZONE);
+	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_LSTICK_X),
+			GetControllerMappingAxisValue(GAP_LSTICK_Y), CROSSHAIR_SPEED, delta_x, delta_y);
 	if (delta_x != 0 || delta_y != 0) {
 		MoveGamepadCursor(delta_x, delta_y);
 		_input_source = InputSource::Gamepad;

@@ -20,7 +20,11 @@ file records only what this fork adds.
 
 ### Fixes in manual pass
 
-- In-game options cog now has a **Controller** entry that opens the C1 controller launcher
+- Left-stick crosshair now uses a shared `ApplyGamepadStickResponse()` helper: scaled
+  radial deadzone (15%) plus a gamma-2 curve. The first quarter of post-deadzone travel
+  stays fine (roughly 6% of max speed); the remaining three quarters ramp to full speed.
+  C4 right-stick pan will call the same helper.
+- In-game options cog now has a **Controller** entry that opens the C1 launcher
   (Controller Guide / Controllers & Mapping) without leaving the game.
 - LB/RB modifiers are now ORed into the video driver's `_ctrl_pressed`/`_shift_pressed`
   before its transition check. The driver previously reset Ctrl from the keyboard every

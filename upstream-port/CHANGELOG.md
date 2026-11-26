@@ -3,6 +3,17 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-26 — C1 bugfix: calibrated axis rest positions
+
+- Mapping startup now polls every mappable axis for 750 ms at 20 ms intervals and stores
+  the **longest stable value** as that axis's resting position. A brief tap during
+  calibration cannot become the baseline.
+- Axis detection and runtime activation now measure from the calibrated rest instead of
+  assuming `0` for sticks and `-32768` for triggers. This fixes controllers such as the
+  8BitDo Ultimate MG, whose axes rest near `-128` and were otherwise mapped immediately.
+- `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
+  four-field values still parse; their rest is inferred from the step type.
+
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 
 ### Added

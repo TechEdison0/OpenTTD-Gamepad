@@ -43,6 +43,7 @@ struct MappingValue {
 	uint8_t index = 0;      ///< raw SDL button/axis/hat number
 	int16_t min = -32768;   ///< lowest value seen while calibrating an axis
 	int16_t max = 32767;    ///< highest value seen while calibrating an axis
+	int16_t rest = 0;       ///< calibrated resting value of an axis
 	uint8_t direction = 0;  ///< hat direction bit, when #MappingKind::Hat
 
 	/** Whether anything has been captured. */
@@ -120,6 +121,9 @@ const char *GetControllerMappingDescription(size_t step);
  * @return Whether the flow started (a controller must be selected).
  */
 bool StartControllerMapping();
+
+/** Poll axis rest positions while startup calibration is active. */
+void TickControllerMapping();
 
 /** Abort the mapping flow, keeping whatever was already captured. */
 void CancelControllerMapping();

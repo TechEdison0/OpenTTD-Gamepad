@@ -415,6 +415,19 @@ bool GetGamepadLiveButton(uint8_t index)
 	return index < _gamepad_live_buttons.size() && _gamepad_live_buttons[index];
 }
 
+int16_t GetGamepadAxisValue(uint8_t index)
+{
+	/* Poll the device so calibration does not depend on event delivery timing. */
+	if (_gamepad_selection >= 0 && _gamepad_selection < static_cast<int>(_gamepad_slots.size())) {
+		SDL_Joystick *joystick = _gamepad_slots[_gamepad_selection].joystick;
+		if (joystick != nullptr && index < SDL_JoystickNumAxes(joystick)) {
+			return SDL_JoystickGetAxis(joystick, index);
+		}
+	}
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
+	return index < _gamepad_live_axes.size() ? _gamepad_live_axes[index] : 0;
+}
+
 int16_t GetGamepadLiveAxis(uint8_t index)
 {
 	if (index >= _gamepad_live_axes.size()) return 0;

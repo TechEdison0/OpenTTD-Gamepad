@@ -186,6 +186,7 @@ public:
 
 	void OnRealtimeTick(uint delta_ms) override
 	{
+		TickControllerMapping();
 		this->accumulated_ms += delta_ms;
 		if (this->accumulated_ms >= 100) {
 			this->accumulated_ms = 0;

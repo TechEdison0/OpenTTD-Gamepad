@@ -22,6 +22,11 @@ file records only what this fork adds.
 - Axis capture is now edge-triggered: an axis must first report a value near its learned
   rest, then move beyond the detection threshold, before it can satisfy a prompt. Axes
   whose calibration gesture did not show a meaningful range are skipped.
+- Controllers with an SDL game-controller axis mapping now use SDL's normalized logical
+  axes directly: sticks are centered near zero and triggers run `0..32767`, so no custom
+  rest gesture is required and standard pads such as SN30 Pro keep the simple flow.
+- Raw/unmapped controllers still use the explicit gesture, learned rest/range and
+  edge-triggered capture. The two domains are never mixed at runtime.
 - `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
   four-field values still parse; their rest is inferred from the step type.
 

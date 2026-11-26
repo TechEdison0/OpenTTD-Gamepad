@@ -82,6 +82,15 @@ bool IsGamepadTriggerAxis(uint8_t index);
 /** Whether a raw axis index is a stick axis on the selected controller. */
 bool IsGamepadStickAxis(uint8_t index);
 
+/** Whether SDL exposes normalized game-controller axes for the selected controller. */
+bool HasGameControllerAxisMapping(size_t index);
+
+/** Logical game-controller axis bound to a raw axis of the selected controller, or -1. */
+int GetSelectedLogicalAxisForRaw(uint8_t raw_axis);
+
+/** Normalized value of a logical game-controller axis of the selected controller. */
+int16_t GetGamepadLogicalAxisValue(uint8_t logical_axis);
+
 /** Current hat bitfield of the selected controller (centered when unavailable). */
 uint8_t GetGamepadLiveHat(uint8_t index);
 

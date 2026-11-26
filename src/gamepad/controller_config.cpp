@@ -105,6 +105,8 @@ static constexpr uint32_t _mapping_settle_ms = 250;
 static constexpr uint32_t _mapping_axis_quiet_ms = 500;
 /** Hardcoded runtime deadzone for axes (about 1% of the full range). */
 static constexpr int16_t _mapping_deadzone = 327;
+/** High bit of a controller input event index marks an SDL logical game-controller axis. */
+static constexpr uint8_t LOGICAL_AXIS_FLAG = 0x80;
 /** Maximum raw axis index tracked during the A-prompt calibration gesture. */
 static constexpr size_t MAX_CALIBRATION_AXES = 64;
 
@@ -121,6 +123,7 @@ enum class MappingPhase : uint8_t {
 
 static bool _mapping_active = false;
 static MappingPhase _mapping_phase = MappingPhase::Idle;
+static bool _mapping_use_logical = false;
 static size_t _mapping_step = 0;
 static uint32_t _mapping_step_started = 0;
 /** Axis events before this tick are ignored after a capture. */
@@ -196,6 +199,7 @@ static std::string FormatMappingValue(const MappingValue &value)
 		case MappingKind::None: return {};
 		case MappingKind::Button: return fmt::format("button:{}", value.index);
 		case MappingKind::Axis: return fmt::format("axis:{}:{}:{}:{}", value.index, value.min, value.max, value.rest);
+		case MappingKind::LogicalAxis: return fmt::format("logical:{}:{}:{}:{}", value.index, value.min, value.max, value.rest);
 		case MappingKind::Hat: return fmt::format("hat:{}:{}", value.index, value.direction);
 	}
 	return {};
@@ -245,6 +249,12 @@ static MappingValue ParseMappingValue(const std::string &text, uint8_t step_flag
 		value.rest = field(4).empty()
 			? static_cast<int16_t>((step_flag & MAPPING_STEP_TRIGGER) != 0 ? -32768 : 0)
 			: static_cast<int16_t>(ParseMappingNumber(field(4)));
+	} else if (kind == "logical" && !field(1).empty() && !field(2).empty() && !field(3).empty()) {
+		value.kind = MappingKind::LogicalAxis;
+		value.index = static_cast<uint8_t>(ParseMappingNumber(field(1)));
+		value.min = static_cast<int16_t>(ParseMappingNumber(field(2)));
+		value.max = static_cast<int16_t>(ParseMappingNumber(field(3)));
+		value.rest = field(4).empty() ? 0 : static_cast<int16_t>(ParseMappingNumber(field(4)));
 	} else if (kind == "hat" && !field(1).empty() && !field(2).empty()) {
 		value.kind = MappingKind::Hat;
 		value.index = static_cast<uint8_t>(ParseMappingNumber(field(1)));
@@ -260,6 +270,7 @@ static std::string DescribeMappingValue(const MappingValue &value)
 		case MappingKind::None: return {};
 		case MappingKind::Button: return fmt::format("button {}", value.index);
 		case MappingKind::Axis: return fmt::format("axis {} [{}, {}] rest {}", value.index, value.min, value.max, value.rest);
+		case MappingKind::LogicalAxis: return fmt::format("logical axis {} [{}, {}] rest {}", value.index, value.min, value.max, value.rest);
 		case MappingKind::Hat: return fmt::format("hat {} {}", value.index, DescribeHatDirection(value.direction));
 	}
 	return {};
@@ -345,6 +356,7 @@ static void AdvanceMappingStep()
 	if (_mapping_step >= _mapping_steps.size()) {
 		_mapping_active = false;
 		_mapping_phase = MappingPhase::Idle;
+		_mapping_use_logical = false;
 		WriteConfigFile(SelectedGuid(), _mapping_values);
 		InvalidateWindowData(WindowClass::Controller, 0);
 		return;
@@ -480,6 +492,13 @@ bool IsControllerMappingControlActive(size_t step)
 			return delta > _mapping_axis_threshold / 2 || delta < -_mapping_axis_threshold / 2;
 		}
 
+		case MappingKind::LogicalAxis: {
+			int live = static_cast<int>(GetGamepadLogicalAxisValue(value.index));
+			if (_mapping_steps[step].flag == MAPPING_STEP_TRIGGER) return live > value.max / 4;
+			int delta = live - static_cast<int>(value.rest);
+			return delta > _mapping_axis_threshold / 2 || delta < -_mapping_axis_threshold / 2;
+		}
+
 		case MappingKind::Hat:
 			return (GetGamepadLiveHat(value.index) & value.direction) != 0;
 
@@ -493,7 +512,7 @@ int GetControllerMappingAxisValue(size_t step)
 {
 	if (step >= _mapping_values.size()) return 0;
 	const MappingValue &value = _mapping_values[step];
-	if (value.kind != MappingKind::Axis) return 0;
+	if (value.kind != MappingKind::Axis && value.kind != MappingKind::LogicalAxis) return 0;
 
 	int minimum = static_cast<int>(value.min);
 	int maximum = static_cast<int>(value.max);
@@ -501,8 +520,11 @@ int GetControllerMappingAxisValue(size_t step)
 	int half_range = (maximum - minimum) / 2;
 	if (half_range <= 0) return 0;
 	int centre = static_cast<int>(value.rest);
+	int live = value.kind == MappingKind::LogicalAxis
+		? static_cast<int>(GetGamepadLogicalAxisValue(value.index))
+		: static_cast<int>(GetGamepadLiveAxis(value.index));
 
-	int scaled = (static_cast<int>(GetGamepadLiveAxis(value.index)) - centre) * 100 / half_range;
+	int scaled = (live - centre) * 100 / half_range;
 	if (scaled > 100) scaled = 100;
 	if (scaled < -100) scaled = -100;
 	return scaled;
@@ -535,15 +557,18 @@ bool StartControllerMapping()
 		return false;
 	}
 	_mapping_values.fill(MappingValue{});
+	_mapping_use_logical = HasGameControllerAxisMapping(static_cast<size_t>(GetGamepadSelection()));
 	_axis_range_samples.fill(AxisRangeSample{});
 	_axis_calibrated.fill(false);
 	_axis_armed.fill(false);
 	_mapping_step = 0;
 	_mapping_active = true;
-	_mapping_phase = MappingPhase::AOnly;
+	/* Mapped game controllers expose normalized axes; they need no custom gesture. */
+	_mapping_phase = _mapping_use_logical ? MappingPhase::Full : MappingPhase::AOnly;
 	_mapping_axis_ignore_until = 0;
 	ResetMappingStepState();
-	_controller_status = "mapping: press A, then perform the calibration gesture";
+	_controller_status = _mapping_use_logical ? "mapping: follow the prompts"
+		: "mapping: press A, then perform the calibration gesture";
 	InvalidateWindowData(WindowClass::Controller, 0);
 	return true;
 }
@@ -552,9 +577,22 @@ void CancelControllerMapping()
 {
 	_mapping_active = false;
 	_mapping_phase = MappingPhase::Idle;
+	_mapping_use_logical = false;
 	_mapping_axis_ignore_until = 0;
 	_controller_status = "mapping cancelled";
 	InvalidateWindowData(WindowClass::Controller, 0);
+}
+
+/** Store an SDL-normalized game-controller axis and move on. */
+static void RecordLogicalAxisAndAdvance(uint8_t logical_axis)
+{
+	bool trigger = logical_axis >= SDL_CONTROLLER_AXIS_TRIGGERLEFT;
+	int16_t minimum = trigger ? 0 : -32768;
+	int16_t maximum = 32767;
+	_mapping_values[_mapping_step] = MappingValue{MappingKind::LogicalAxis, logical_axis, minimum, maximum, 0, 0};
+	_mapping_step++;
+	ResetMappingStepState();
+	_mapping_axis_ignore_until = SDL_GetTicks() + _mapping_axis_quiet_ms;
 }
 
 void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_t value)
@@ -636,14 +674,32 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 
 		case ControllerInputEventType::AxisMotion: {
 			if (step.flag != MAPPING_STEP_AXIS && step.flag != MAPPING_STEP_TRIGGER) break;
-			if (!IsSelectedControllerAxis(index)) break;
-			if (index >= MAX_CALIBRATION_AXES || !_axis_calibrated[index]) break;
 
 			uint32_t now = SDL_GetTicks();
 			/* Time-based ignore: no dependency on further axis events, so mapping
 			 * cannot freeze if the user releases a stick and waits. */
 			if (now < _mapping_axis_ignore_until) break;
 			if (!settled) break;
+
+			if (_mapping_use_logical) {
+				if ((index & LOGICAL_AXIS_FLAG) == 0) break;
+				uint8_t logical = static_cast<uint8_t>(index & 0x7F);
+				if (logical > SDL_CONTROLLER_AXIS_TRIGGERRIGHT) break;
+				if (logical >= SDL_CONTROLLER_AXIS_TRIGGERLEFT) {
+					if (value <= 32767 / 4) break;
+				} else if (std::abs(static_cast<int>(value)) <= _mapping_axis_threshold / 2) {
+					break;
+				}
+				RecordLogicalAxisAndAdvance(logical);
+				AdvanceMappingStep();
+				break;
+			}
+
+			/* Raw path: SDL did not provide normalized game-controller axes. */
+			if ((index & LOGICAL_AXIS_FLAG) != 0) break;
+			if (!IsSelectedControllerAxis(index)) break;
+			if (index >= MAX_CALIBRATION_AXES || !_axis_calibrated[index]) break;
+
 			int rest = static_cast<int>(_axis_rest[index]);
 			int delta = std::abs(static_cast<int>(value) - rest);
 			if (delta <= _mapping_deadzone) {

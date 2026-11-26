@@ -266,7 +266,15 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 	/* The mapping flow needs raw events even in builds with diagnostics compiled out. */
 	switch (event->type) {
 		case SDL_JOYAXISMOTION:
-			ControllerMappingEvent(ControllerInputEventType::AxisMotion, event->jaxis.axis, event->jaxis.value);
+			{
+				int logical = GetSelectedLogicalAxisForRaw(event->jaxis.axis);
+				if (logical >= 0) {
+					int16_t normalized = GetGamepadLogicalAxisValue(static_cast<uint8_t>(logical));
+					ControllerMappingEvent(ControllerInputEventType::AxisMotion,
+							static_cast<uint8_t>(0x80 | logical), normalized);
+				}
+				ControllerMappingEvent(ControllerInputEventType::AxisMotion, event->jaxis.axis, event->jaxis.value);
+			}
 			break;
 
 		case SDL_JOYBUTTONUP:
@@ -439,6 +447,45 @@ bool IsGamepadTriggerAxis(uint8_t index)
 		if (bind.bindType == SDL_CONTROLLER_BINDTYPE_AXIS && bind.value.axis == index) return true;
 	}
 	return false;
+}
+
+bool HasGameControllerAxisMapping(size_t index)
+{
+	if (index >= _gamepad_slots.size()) return false;
+	SDL_GameController *gc = _gamepad_slots[index].gamecontroller;
+	if (gc == nullptr) return false;
+	for (SDL_GameControllerAxis axis : {SDL_CONTROLLER_AXIS_LEFTX, SDL_CONTROLLER_AXIS_LEFTY,
+			SDL_CONTROLLER_AXIS_RIGHTX, SDL_CONTROLLER_AXIS_RIGHTY,
+			SDL_CONTROLLER_AXIS_TRIGGERLEFT, SDL_CONTROLLER_AXIS_TRIGGERRIGHT}) {
+		SDL_GameControllerButtonBind bind = SDL_GameControllerGetBindForAxis(gc, axis);
+		if (bind.bindType == SDL_CONTROLLER_BINDTYPE_NONE) return false;
+	}
+	return true;
+}
+
+int GetSelectedLogicalAxisForRaw(uint8_t raw_axis)
+{
+	if (_gamepad_selection < 0 || static_cast<size_t>(_gamepad_selection) >= _gamepad_slots.size()) return -1;
+	SDL_GameController *gc = _gamepad_slots[_gamepad_selection].gamecontroller;
+	if (gc == nullptr) return -1;
+	for (SDL_GameControllerAxis axis : {SDL_CONTROLLER_AXIS_LEFTX, SDL_CONTROLLER_AXIS_LEFTY,
+			SDL_CONTROLLER_AXIS_RIGHTX, SDL_CONTROLLER_AXIS_RIGHTY,
+			SDL_CONTROLLER_AXIS_TRIGGERLEFT, SDL_CONTROLLER_AXIS_TRIGGERRIGHT}) {
+		SDL_GameControllerButtonBind bind = SDL_GameControllerGetBindForAxis(gc, axis);
+		if (bind.bindType == SDL_CONTROLLER_BINDTYPE_AXIS && bind.value.axis == raw_axis) {
+			return static_cast<int>(axis);
+		}
+	}
+	return -1;
+}
+
+int16_t GetGamepadLogicalAxisValue(uint8_t logical_axis)
+{
+	if (logical_axis > SDL_CONTROLLER_AXIS_TRIGGERRIGHT) return 0;
+	if (_gamepad_selection < 0 || static_cast<size_t>(_gamepad_selection) >= _gamepad_slots.size()) return 0;
+	SDL_GameController *gc = _gamepad_slots[_gamepad_selection].gamecontroller;
+	if (gc == nullptr) return 0;
+	return SDL_GameControllerGetAxis(gc, static_cast<SDL_GameControllerAxis>(logical_axis));
 }
 
 bool IsGamepadStickAxis(uint8_t index)

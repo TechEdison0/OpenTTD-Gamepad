@@ -26,8 +26,9 @@ extern std::string _controller_file;
 enum class MappingKind : uint8_t {
 	None,   ///< nothing captured yet.
 	Button, ///< a digital button.
-	Axis,   ///< an analog axis (with calibration range).
-	Hat,    ///< a hat direction.
+	Axis,        ///< a raw analog axis (with calibrated range).
+	LogicalAxis, ///< an SDL game-controller axis (normalized range).
+	Hat,         ///< a hat direction.
 };
 
 /** Kind of raw input event fed to the mapping flow. */

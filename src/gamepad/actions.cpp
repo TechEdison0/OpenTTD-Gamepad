@@ -26,6 +26,8 @@ enum GamepadActionStep : size_t {
 	GAP_B       = 1,  ///< Placeholder until C3 focus exists.
 	GAP_X       = 2,  ///< Secondary activate.
 	GAP_Y       = 3,  ///< Cancel tool / abort build.
+	GAP_LSHOULDER = 4, ///< Held Ctrl modifier.
+	GAP_RSHOULDER = 5, ///< Held Shift modifier.
 	GAP_LSTICK  = 6,  ///< L3, combined with R3 for pause.
 	GAP_RSTICK  = 7,  ///< R3, combined with L3 for pause.
 };
@@ -34,6 +36,12 @@ static InputSource _input_source = InputSource::KeyboardMouse;
 static bool _suppress_input_source_mark = false;
 static std::array<bool, 18> _action_held = {};
 static bool _pause_held = false;
+static bool _left_held = false;
+static bool _right_held = false;
+static bool _ctrl_from_gamepad = false;
+static bool _shift_from_gamepad = false;
+static bool _ctrl_before_gamepad = false;
+static bool _shift_before_gamepad = false;
 
 void NotifyKeyboardMouseActivity()
 {
@@ -56,9 +64,56 @@ static void CancelToolWithGamepad()
 	_suppress_input_source_mark = false;
 }
 
+/** Apply or release LB/RB as held Ctrl/Shift without losing the keyboard's own state. */
+static void UpdateModifiers(const std::array<bool, 18> &active)
+{
+	if (active[GAP_LSHOULDER] && !_ctrl_from_gamepad) {
+		_ctrl_before_gamepad = _ctrl_pressed;
+		_ctrl_from_gamepad = true;
+	} else if (!active[GAP_LSHOULDER] && _ctrl_from_gamepad) {
+		_ctrl_pressed = _ctrl_before_gamepad;
+		_ctrl_from_gamepad = false;
+	}
+	if (_ctrl_from_gamepad) _ctrl_pressed = true;
+
+	if (active[GAP_RSHOULDER] && !_shift_from_gamepad) {
+		_shift_before_gamepad = _shift_pressed;
+		_shift_from_gamepad = true;
+	} else if (!active[GAP_RSHOULDER] && _shift_from_gamepad) {
+		_shift_pressed = _shift_before_gamepad;
+		_shift_from_gamepad = false;
+	}
+	if (_shift_from_gamepad) _shift_pressed = true;
+}
+
+/** Release any virtual mouse button still held when real KB/M input takes over. */
+static void ReleaseHeldButtons()
+{
+	if (_left_held) {
+		HandleGamepadButton(false, false);
+		_left_held = false;
+	}
+	if (_right_held) {
+		HandleGamepadButton(true, false);
+		_right_held = false;
+	}
+	if (_ctrl_from_gamepad) {
+		_ctrl_pressed = _ctrl_before_gamepad;
+		_ctrl_from_gamepad = false;
+	}
+	if (_shift_from_gamepad) {
+		_shift_pressed = _shift_before_gamepad;
+		_shift_from_gamepad = false;
+	}
+}
+
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
+
+	/* Real KB/M input wins. Drop any virtual mouse buttons we were holding so a
+	 * gamepad press cannot leave a click stuck down. */
+	if (_input_source == InputSource::KeyboardMouse) ReleaseHeldButtons();
 
 	std::array<bool, 18> active = {};
 	for (size_t i = 0; i < active.size(); i++) {
@@ -66,11 +121,16 @@ void HandleGamepadActions()
 	}
 
 	std::array<bool, 18> edge = {};
+	std::array<bool, 18> release = {};
 	bool any_edge = false;
 	for (size_t i = 0; i < active.size(); i++) {
 		edge[i] = active[i] && !_action_held[i];
+		release[i] = !active[i] && _action_held[i];
 		if (edge[i]) any_edge = true;
 	}
+
+	/* LB/RB are held Ctrl/Shift modifiers, active from press until release. */
+	UpdateModifiers(active);
 
 	/* Pause is a chord, not either stick press alone. R3 alone toggles fast forward. */
 	bool pause = active[GAP_LSTICK] && active[GAP_RSTICK];
@@ -80,13 +140,27 @@ void HandleGamepadActions()
 	_action_held = active;
 
 	if (any_edge) _input_source = InputSource::Gamepad;
-	if (!any_edge && !pause_edge) return;
+	bool dispatch = _input_source == InputSource::Gamepad;
 
 	/* B close, D-pad focus, stick crosshair/pan and trigger zoom remain placeholders
 	 * until their respective C3/C5 chunks. Only the focus-independent actions dispatch. */
-	if (edge[GAP_A]) HandleGamepadClick(false);
-	if (edge[GAP_X]) HandleGamepadClick(true);
-	if (edge[GAP_Y]) CancelToolWithGamepad();
-	if (pause_edge) HandleToolbarHotkey(MTHK_PAUSE);
-	if (fastforward_edge) HandleToolbarHotkey(MTHK_FASTFORWARD);
+	if (dispatch && edge[GAP_A] && !_left_held) {
+		HandleGamepadButton(false, true);
+		_left_held = true;
+	}
+	if (dispatch && release[GAP_A] && _left_held) {
+		HandleGamepadButton(false, false);
+		_left_held = false;
+	}
+	if (dispatch && edge[GAP_X] && !_right_held) {
+		HandleGamepadButton(true, true);
+		_right_held = true;
+	}
+	if (dispatch && release[GAP_X] && _right_held) {
+		HandleGamepadButton(true, false);
+		_right_held = false;
+	}
+	if (dispatch && edge[GAP_Y]) CancelToolWithGamepad();
+	if (dispatch && pause_edge) HandleToolbarHotkey(MTHK_PAUSE);
+	if (dispatch && fastforward_edge) HandleToolbarHotkey(MTHK_FASTFORWARD);
 }

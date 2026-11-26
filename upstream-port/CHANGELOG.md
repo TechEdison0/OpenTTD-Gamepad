@@ -20,7 +20,13 @@ file records only what this fork adds.
 
 ### Fixed
 
-- A and X now go through the real mouse dispatch path (`HandleGamepadClick()` →
+- Virtual mouse buttons now stay down from press to release. A and X call
+  `HandleGamepadButton()` on both edges, so drag-build, N+N modifiers and release
+  finalization work; LB/RB are held Ctrl/Shift. The old code fired an immediate
+  press→release pair on one edge.
+- Real mouse activity is detected from clicks/wheel/cursor delta, not held button
+  state, so a gamepad-held virtual button cannot falsely hand control back to KB/M.
+- A and X now go through the real mouse dispatch path (`HandleGamepadButton()` →
   `MouseLoop()`), so build placement, drag-build and context menus behave like real
   clicks. A bare `OnClick()` had bypassed viewport handling.
 - R3 alone toggles fast forward via `MTHK_FASTFORWARD`; L3+R3 still pauses. The Controller

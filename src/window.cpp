@@ -3130,8 +3130,7 @@ void HandleMouseEvents()
 	}
 
 	/* HandleMouseEvents() runs every tick; only real activity yields control from a pad. */
-	if (click != MouseClick::None || mousewheel != 0 || _cursor.delta.x != 0 || _cursor.delta.y != 0 ||
-			_left_button_down || _right_button_down) {
+	if (click != MouseClick::None || mousewheel != 0 || _cursor.delta.x != 0 || _cursor.delta.y != 0) {
 		NotifyKeyboardMouseActivity();
 	}
 
@@ -3172,15 +3171,37 @@ void HandleMouseEvents()
 }
 
 /**
- * Dispatch a click from a gamepad action through the real mouse dispatch path. This is
- * not a synthetic SDL event; it reuses the same viewport/build/drag handling as a real
- * button press, which a bare OnClick() would bypass.
+ * Press or release a virtual mouse button from a gamepad action. The button state must
+ * stay down between press and release: drag-build and modifier+click combos rely on it.
+ * This is not a synthetic SDL event; it reuses the same MouseLoop path as real input.
  * @param right Use the secondary (right) button.
+ * @param down Press when true, release when false.
  */
-void HandleGamepadClick(bool right)
+void HandleGamepadButton(bool right, bool down)
 {
 	assert(HasModalProgress() || IsLocalCompany());
-	MouseLoop(right ? MouseClick::Right : MouseClick::Left, 0);
+	if (right) {
+		if (down) {
+			_right_button_down = true;
+			_right_button_clicked = true;
+			MouseLoop(MouseClick::Right, 0);
+			_right_button_clicked = false;
+		} else {
+			_right_button_down = false;
+			MouseLoop(MouseClick::None, 0);
+		}
+	} else {
+		if (down) {
+			_left_button_down = true;
+			_left_button_clicked = false;
+			MouseLoop(MouseClick::Left, 0);
+			_left_button_clicked = true;
+		} else {
+			_left_button_down = false;
+			_left_button_clicked = false;
+			MouseLoop(MouseClick::None, 0);
+		}
+	}
 }
 
 /**

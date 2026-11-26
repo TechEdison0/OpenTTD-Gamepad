@@ -49,16 +49,13 @@ struct MappingStepDef {
 };
 
 /** Capture order: face/shoulder/system buttons, D-pad, sticks, triggers. */
-static constexpr std::array<MappingStepDef, 21> _mapping_steps = {{
+static constexpr std::array<MappingStepDef, 18> _mapping_steps = {{
 	{"a",             "A",              MAPPING_STEP_BUTTON},
 	{"b",             "B",              MAPPING_STEP_BUTTON},
 	{"x",             "X",              MAPPING_STEP_BUTTON},
 	{"y",             "Y",              MAPPING_STEP_BUTTON},
 	{"leftshoulder",  "Left shoulder",  MAPPING_STEP_BUTTON},
 	{"rightshoulder", "Right shoulder", MAPPING_STEP_BUTTON},
-	{"back",          "Back",           MAPPING_STEP_BUTTON},
-	{"start",         "Start",          MAPPING_STEP_BUTTON},
-	{"guide",         "Guide",          MAPPING_STEP_BUTTON},
 	{"leftstick",     "Left stick",     MAPPING_STEP_BUTTON},
 	{"rightstick",    "Right stick",    MAPPING_STEP_BUTTON},
 	{"dpup",          "D-pad up",       MAPPING_STEP_DPAD},
@@ -85,9 +82,6 @@ static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descri
 	"Esc: cancel tool / abort build",
 	"Hold: Ctrl modifier",
 	"Hold: Shift modifier",
-	"Save game",
-	"Pause / resume",
-	"Hold 3 s: save and quit (silent)",
 	"L3 - unassigned",
 	"R3 - unassigned",
 	"Focus up (C3)",
@@ -106,6 +100,8 @@ static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descri
 static constexpr int16_t _mapping_axis_threshold = 16384;
 /** Ignore inputs shortly after a prompt appears, so held controls do not leak in. */
 static constexpr uint32_t _mapping_settle_ms = 250;
+/** After an axis is captured, wait for all axes to stop before the next step. */
+static constexpr uint32_t _mapping_axis_quiet_ms = 500;
 /** Hardcoded runtime deadzone for axes (about 1% of the full range). */
 static constexpr int16_t _mapping_deadzone = 327;
 
@@ -122,6 +118,25 @@ static uint8_t _mapping_axis_candidate = 0;
 static bool _mapping_axis_engaged = false;
 static std::array<int16_t, 16> _mapping_axis_baselines = {};
 static std::array<bool, 16> _mapping_axis_baseline_set = {};
+static std::array<uint32_t, 16> _mapping_axis_last_motion = {};
+/** Whether the previous axis capture is still waiting for a quiet controller. */
+static bool _mapping_axis_wait_quiet = false;
+
+/** Whether every mappable axis of the selected controller is at rest. */
+static bool AreMappableAxesAtRest()
+{
+	int selection = GetGamepadSelection();
+	if (selection < 0) return true;
+	size_t count = GetGamepadAxisCount(static_cast<size_t>(selection));
+	for (size_t i = 0; i < count; i++) {
+		int raw = GetGamepadAxis(static_cast<size_t>(selection), i);
+		if (raw < 0 || raw >= static_cast<int>(_mapping_axis_baselines.size())) continue;
+		int value = GetGamepadLiveAxis(static_cast<uint8_t>(raw));
+		/* Sticks rest near zero; triggers rest at the bottom of their range. */
+		if (std::abs(value) > _mapping_deadzone && value < -32768 + _mapping_deadzone) return false;
+	}
+	return true;
+}
 
 /** Human-readable name of a hat direction bitfield. */
 static std::string DescribeHatDirection(uint8_t bits)
@@ -276,6 +291,7 @@ static void RecordAxisAndAdvance()
 		clamp_dead(_mapping_axis_min), clamp_dead(_mapping_axis_max), 0};
 	_mapping_step++;
 	ResetMappingStepState();
+	_mapping_axis_wait_quiet = true;
 }
 
 /** Move to the next step, finishing and saving when the last one completes. */
@@ -446,6 +462,8 @@ bool StartControllerMapping()
 	_mapping_values.fill(MappingValue{});
 	_mapping_step = 0;
 	_mapping_active = true;
+	_mapping_axis_wait_quiet = false;
+	_mapping_axis_last_motion.fill(0);
 	ResetMappingStepState();
 	_controller_status = "mapping: follow the prompts";
 	InvalidateWindowData(WindowClass::Controller, 0);
@@ -455,6 +473,7 @@ bool StartControllerMapping()
 void CancelControllerMapping()
 {
 	_mapping_active = false;
+	_mapping_axis_wait_quiet = false;
 	_controller_status = "mapping cancelled";
 	InvalidateWindowData(WindowClass::Controller, 0);
 }
@@ -496,8 +515,27 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 			if (step.flag != MAPPING_STEP_AXIS && step.flag != MAPPING_STEP_TRIGGER) break;
 			if (!IsSelectedControllerAxis(index)) break;
 
-			if (value < _mapping_axis_min) _mapping_axis_min = value;
-			if (value > _mapping_axis_max) _mapping_axis_max = value;
+			uint32_t now = SDL_GetTicks();
+			if (index < _mapping_axis_last_motion.size()) _mapping_axis_last_motion[index] = now;
+
+			/* A captured axis can leave another axis moving. Do not start the next step
+			 * until every mappable axis has been at rest for a while. */
+			if (_mapping_axis_wait_quiet) {
+				bool recent = false;
+				int selection = GetGamepadSelection();
+				if (selection >= 0) {
+					size_t count = GetGamepadAxisCount(static_cast<size_t>(selection));
+					for (size_t i = 0; i < count; i++) {
+						int raw = GetGamepadAxis(static_cast<size_t>(selection), i);
+						if (raw < 0 || raw >= static_cast<int>(_mapping_axis_last_motion.size())) continue;
+						if (now - _mapping_axis_last_motion[raw] < _mapping_axis_quiet_ms) recent = true;
+					}
+				}
+				if (recent || !AreMappableAxesAtRest()) break;
+				_mapping_axis_wait_quiet = false;
+				ResetMappingStepState();
+				break;
+			}
 
 			/* Triggers rest at the axis minimum on some pads, so movement is
 			 * measured relative to each axis' resting value. */
@@ -518,11 +556,18 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 				if (std::abs(delta) >= _mapping_axis_threshold) {
 					_mapping_axis_engaged = true;
 					_mapping_axis_candidate = index;
+					/* Calibration belongs to the candidate only: another axis moving in
+					 * the same gesture must not pollute its min/max. */
+					_mapping_axis_min = value;
+					_mapping_axis_max = value;
 				}
-			} else if (index == _mapping_axis_candidate &&
-					std::abs(delta) <= _mapping_axis_threshold / 2) {
-				RecordAxisAndAdvance();
-				AdvanceMappingStep();
+			} else if (index == _mapping_axis_candidate) {
+				if (value < _mapping_axis_min) _mapping_axis_min = value;
+				if (value > _mapping_axis_max) _mapping_axis_max = value;
+				if (std::abs(delta) <= _mapping_axis_threshold / 2) {
+					RecordAxisAndAdvance();
+					AdvanceMappingStep();
+				}
 			}
 			break;
 		}

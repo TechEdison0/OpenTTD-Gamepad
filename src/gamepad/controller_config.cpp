@@ -403,6 +403,25 @@ bool IsControllerMappingControlActive(size_t step)
 	return false;
 }
 
+int GetControllerMappingAxisValue(size_t step)
+{
+	if (step >= _mapping_values.size()) return 0;
+	const MappingValue &value = _mapping_values[step];
+	if (value.kind != MappingKind::Axis) return 0;
+
+	int minimum = static_cast<int>(value.min);
+	int maximum = static_cast<int>(value.max);
+	if (maximum <= minimum) return 0;
+	int half_range = (maximum - minimum) / 2;
+	if (half_range <= 0) return 0;
+	int centre = (minimum + maximum) / 2;
+
+	int scaled = (GetGamepadLiveAxis(value.index) - centre) * 100 / half_range;
+	if (scaled > 100) scaled = 100;
+	if (scaled < -100) scaled = -100;
+	return scaled;
+}
+
 std::string GetControllerMappingLiveText(size_t step)
 {
 	if (step >= _mapping_values.size()) return "-";

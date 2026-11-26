@@ -24,6 +24,9 @@ file records only what this fork adds.
   before its transition check. The driver previously reset Ctrl from the keyboard every
   tick while C2 forced it true, causing bulldoze to toggle every frame and leaving Ctrl
   inverted on release. `HandleCtrlChanged()` now fires once per real transition.
+- Left stick now moves the crosshair directly through `MoveGamepadCursor()`, with a
+  small deadzone and fixed pixel speed. Gamepad cursor deltas are tagged so they do not
+  count as KB/M activity. C3 D-pad snapping will reuse the same helper.
 - LT/RT zoom: one large step per press edge, held press does not auto-repeat. The
   existing keyboard zoom hotkeys keep their own repeat behaviour.
 

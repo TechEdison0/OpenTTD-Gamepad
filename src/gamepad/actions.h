@@ -28,6 +28,12 @@ InputSource GetInputSource();
 /** Gamepad-contributed modifier state; OR with the keyboard state in the video driver. */
 void GetGamepadModifiers(bool &ctrl, bool &shift);
 
+/** Move the crosshair by a pixel delta. C3 D-pad snapping reuses this helper. */
+void MoveGamepadCursor(int delta_x, int delta_y);
+
+/** Whether the last cursor delta came from the gamepad, so KB/M activity must not be marked. */
+bool ConsumeGamepadCursorMovement();
+
 /** Consume mapped controller actions. Called once per tick from InputLoop(). */
 void HandleGamepadActions();
 

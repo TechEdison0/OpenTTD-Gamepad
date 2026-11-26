@@ -32,6 +32,8 @@ enum GamepadActionStep : size_t {
 	GAP_RSTICK  = 7,  ///< R3, toggles fast forward.
 	GAP_LTRIGGER = 16, ///< LT, zoom out.
 	GAP_RTRIGGER = 17, ///< RT, zoom in.
+	GAP_LSTICK_X = 12, ///< Left stick horizontal, crosshair.
+	GAP_LSTICK_Y = 13, ///< Left stick vertical, crosshair.
 };
 
 static InputSource _input_source = InputSource::KeyboardMouse;
@@ -41,6 +43,7 @@ static bool _left_held = false;
 static bool _right_held = false;
 static bool _ctrl_from_gamepad = false;
 static bool _shift_from_gamepad = false;
+static bool _gamepad_cursor_moved = false;
 
 void NotifyKeyboardMouseActivity()
 {
@@ -77,6 +80,35 @@ void GetGamepadModifiers(bool &ctrl, bool &shift)
 	shift = _shift_from_gamepad;
 }
 
+void MoveGamepadCursor(int delta_x, int delta_y)
+{
+	int new_x = _cursor.pos.x + delta_x;
+	int new_y = _cursor.pos.y + delta_y;
+	if (new_x < 0) new_x = 0;
+	if (new_y < 0) new_y = 0;
+	if (new_x >= _screen.width) new_x = _screen.width - 1;
+	if (new_y >= _screen.height) new_y = _screen.height - 1;
+
+	delta_x = new_x - _cursor.pos.x;
+	delta_y = new_y - _cursor.pos.y;
+	if (delta_x == 0 && delta_y == 0) return;
+
+	_cursor.pos.x = new_x;
+	_cursor.pos.y = new_y;
+	_cursor.delta.x = delta_x;
+	_cursor.delta.y = delta_y;
+	_cursor.in_window = true;
+	_cursor.dirty = true;
+	_gamepad_cursor_moved = true;
+}
+
+bool ConsumeGamepadCursorMovement()
+{
+	bool moved = _gamepad_cursor_moved;
+	_gamepad_cursor_moved = false;
+	return moved;
+}
+
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
@@ -84,6 +116,23 @@ void HandleGamepadActions()
 	std::array<bool, 18> active = {};
 	for (size_t i = 0; i < active.size(); i++) {
 		active[i] = IsControllerMappingControlActive(i);
+	}
+
+	/* Left stick is a direct crosshair. C3 D-pad snapping will reuse MoveGamepadCursor()
+	 * with an exact widget-centre delta instead of this analogue speed. */
+	static constexpr int DEADZONE = 15;
+	static constexpr int SPEED = 12; // pixels per tick at full deflection
+	int stick_x = GetControllerMappingAxisValue(GAP_LSTICK_X);
+	int stick_y = GetControllerMappingAxisValue(GAP_LSTICK_Y);
+	int delta_x = 0;
+	int delta_y = 0;
+	if (stick_x > DEADZONE) delta_x = (stick_x - DEADZONE) * SPEED / (100 - DEADZONE);
+	if (stick_x < -DEADZONE) delta_x = (stick_x + DEADZONE) * SPEED / (100 - DEADZONE);
+	if (stick_y > DEADZONE) delta_y = (stick_y - DEADZONE) * SPEED / (100 - DEADZONE);
+	if (stick_y < -DEADZONE) delta_y = (stick_y + DEADZONE) * SPEED / (100 - DEADZONE);
+	if (delta_x != 0 || delta_y != 0) {
+		MoveGamepadCursor(delta_x, delta_y);
+		_input_source = InputSource::Gamepad;
 	}
 
 	std::array<bool, 18> edge = {};

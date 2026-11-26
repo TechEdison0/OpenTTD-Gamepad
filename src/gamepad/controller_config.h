@@ -99,6 +99,12 @@ std::vector<std::pair<std::string, std::string>> GetControllerMappingRows();
 bool IsControllerMappingControlActive(size_t step);
 
 /**
+ * Normalized -100..100 value for a mapped axis step, or 0 when the step is not an axis.
+ * @param step Position in the mapping list.
+ */
+int GetControllerMappingAxisValue(size_t step);
+
+/**
  * Live column text: the current value for every mapped control: \c "pressed"/"released"
  * for buttons, the raw number for axes and the hat bitfield for directions; \c "-" when
  * nothing is captured.

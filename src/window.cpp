@@ -3130,7 +3130,9 @@ void HandleMouseEvents()
 	}
 
 	/* HandleMouseEvents() runs every tick; only real activity yields control from a pad. */
-	if (click != MouseClick::None || mousewheel != 0 || _cursor.delta.x != 0 || _cursor.delta.y != 0) {
+	bool gamepad_cursor_moved = ConsumeGamepadCursorMovement();
+	if (click != MouseClick::None || mousewheel != 0 ||
+			((_cursor.delta.x != 0 || _cursor.delta.y != 0) && !gamepad_cursor_moved)) {
 		NotifyKeyboardMouseActivity();
 	}
 

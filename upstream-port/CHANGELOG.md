@@ -3,71 +3,37 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-26 — C2 action layer (in progress, not released)
+## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 
 ### Added
 
-- Normalized gamepad actions with press-edge detection in new `src/gamepad/actions.*`,
-  dispatched from `InputLoop()` on the input thread. No synthetic SDL events.
-- Input-source tracking: real keyboard/text/mouse activity immediately yields from the
-  gamepad; a pad action edge takes control back. Mouse activity is detected from actual
-  clicks, wheel, cursor delta or held buttons, not from `HandleMouseEvents()` entry.
-- Focus-independent actions: A activates the widget under the cursor, X invokes its
-  right-click handler, Y cancels the active tool without falsely marking keyboard input,
-  and L3 pauses via `HandleToolbarHotkey(MTHK_PAUSE)`.
-- Mutex protection for live button/axis/hat state shared between the SDL event thread and
-  the input/game threads.
+- Normalized gamepad actions with press-and-release semantics in `src/gamepad/actions.*`,
+  dispatched from `InputLoop()` through the engine's existing click/hotkey paths. No
+  synthetic SDL events.
+- Input-source tracking: real keyboard/mouse activity yields immediately; held pad
+  buttons survive crosshair movement and release on the physical button.
+- A/X are held left/right clicks, Y cancels the active tool, LB/RB are held Ctrl/Shift,
+  L3 pauses, R3 toggles fast forward and LT/RT zoom one step per press.
+- Left-stick crosshair with a shared scaled-radial-deadzone and gamma-2 response curve
+  (`ApplyGamepadStickResponse()`), reused later by C4 right-stick pan.
+- Mutex protection for live pad state shared between the SDL event thread and the game
+  thread.
 
-### Fixes in manual pass
+### Fixed during manual pass
 
-- Left-stick crosshair now uses a shared `ApplyGamepadStickResponse()` helper: scaled
-  radial deadzone (15%) plus a gamma-2 curve. The first quarter of post-deadzone travel
-  stays fine (roughly 6% of max speed); the remaining three quarters ramp to full speed.
-  C4 right-stick pan will call the same helper.
-- In-game options cog now has a **Controller Guide** entry directly below Game Options;
-  it opens the guide window. The main-menu Controller launcher stays on the main menu.
-- LB/RB modifiers are now ORed into the video driver's `_ctrl_pressed`/`_shift_pressed`
-  before its transition check. The driver previously reset Ctrl from the keyboard every
-  tick while C2 forced it true, causing bulldoze to toggle every frame and leaving Ctrl
-  inverted on release. `HandleCtrlChanged()` now fires once per real transition.
-- Left stick now moves the crosshair directly through `MoveGamepadCursor()`, with a
-  small deadzone and fixed pixel speed. Gamepad cursor deltas are tagged so they do not
-  count as KB/M activity. C3 D-pad snapping will reuse the same helper.
-- LT/RT zoom: one large step per press edge, held press does not auto-repeat. The
-  existing keyboard zoom hotkeys keep their own repeat behaviour.
+- Held state is polled from SDL so buttons cannot appear to release early on Android.
+- Mouse movement no longer cancels a held gamepad click.
+- LB/RB modifiers are ORed into the video driver's modifier state before its transition
+  check, so bulldoze no longer toggles every frame and Ctrl is not inverted on release.
+- Drag-build and context menus use the real `MouseLoop()` path on both press and release.
+- SDL bind queries no longer run while holding the live-state mutex, removing an
+  event-watch self-deadlock seen on Android.
+- The in-game options cog has a **Controller Guide** entry below Game Options.
 
-- Mouse movement no longer cancels a held gamepad click. KB/M activity stops new pad
-  actions from starting, but A/X/shoulder releases are driven by the physical pad button,
-  so the mouse can still move the crosshair until left-stick crosshair lands in C3.
-- Held button state is polled from SDL on every action tick (`GetGamepadButtonHeld()`),
-  not only inferred from the event watch. This fixes buttons that appeared to release
-  early on Android and keeps A/X/LB/RB held for the full physical press.
-- Pause is L3 alone; R3 toggles fast forward. The old L3+R3 chord is removed.
-- Shoulders are held Ctrl/Shift alongside A/X/Y, so `L+A` share-orders and `R+A`
-  cost-estimate combos keep their modifier through the whole click and drag.
+### Verified
 
-### Fixed
-
-- Virtual mouse buttons now stay down from press to release. A and X call
-  `HandleGamepadButton()` on both edges, so drag-build, N+N modifiers and release
-  finalization work; LB/RB are held Ctrl/Shift. The old code fired an immediate
-  press→release pair on one edge.
-- Real mouse activity is detected from clicks/wheel/cursor delta, not held button
-  state, so a gamepad-held virtual button cannot falsely hand control back to KB/M.
-- A and X now go through the real mouse dispatch path (`HandleGamepadButton()` →
-  `MouseLoop()`), so build placement, drag-build and context menus behave like real
-  clicks. A bare `OnClick()` had bypassed viewport handling.
-- R3 toggles fast forward via `MTHK_FASTFORWARD`; L3 pauses. The Controller
-  guide and mapping descriptions now list R3.
-- Android freeze after several inputs: `GetGamepadLiveAxis()` no longer calls SDL bind
-  queries while holding the live-state mutex. SDL queries can run the event watch, which
-  writes the same arrays and would self-deadlock.
-- Y cancel no longer marks keyboard activity, so the pad keeps input priority.
-
-### Placeholders
-
-- B close, D-pad focus movement, stick crosshair/pan and trigger zoom remain documented
-  placeholders for C3/C5. Settings and rebinding remain deferred to C7.
+Compiled and manually verified on Linux x86_64, Windows under Wine, and Android
+arm64-v8a (Galaxy S25 Ultra).
 
 ## 2026-11-26 — `v20261126-c1-controller-implementation` (C1 complete)
 

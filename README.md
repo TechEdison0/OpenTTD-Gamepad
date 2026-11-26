@@ -148,11 +148,12 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C1 controller implementation
+### Current release — C2 action layer
 
-`v20261126-c1-controller-implementation` completes the C1 controller layer. The main-menu
-**Controller** entry opens a launcher with **Controller Guide** and **Controllers &
-Mapping**. The guide is a plain `Button -> Description` list with sprite bullets and
+`v20261126-c2-action-layer` completes C2 on top of the C1 controller layer. The main-menu
+**Controller** entry still opens the launcher with **Controller Guide** and **Controllers &
+Mapping**; the in-game options cog also has a **Controller Guide** entry directly below
+Game Options. The guide is a plain `Button -> Description` list with sprite bullets and
 built-in arrow glyphs; the mapping window shows `Control`, `Mapping` and `Live` columns
 with the current value of every mapped input.
 
@@ -169,12 +170,20 @@ Captured values are stored per controller in `controller.cfg` beside `hotkeys.cf
 (`button:N`, `axis:N:min:max`, `hat:H:bits`) and reloaded on start; finishing the flow
 auto-saves. Gyroscope/accelerometer-style axes are excluded.
 
+C2 adds normalized, press-and-release actions with no synthetic SDL events: A is a held
+left click, X is a held right click, Y cancels the active tool, LB/RB are held Ctrl/Shift,
+LT/RT zoom one step per press, left stick moves the crosshair through a scaled radial
+deadzone and gamma-2 curve, L3 pauses and R3 toggles fast forward. Real keyboard/mouse
+activity takes priority; held pad buttons survive crosshair movement and release on the
+physical button.
+
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
 gamepad registry flags, video stays on win32); Android install the APK. Base
 graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261126-c2-action-layer` | C2 action layer: held A/X, modifiers, crosshair, zoom, pause/fast-forward, input-source switching |
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |

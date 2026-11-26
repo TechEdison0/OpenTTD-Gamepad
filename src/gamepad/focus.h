@@ -34,6 +34,12 @@ void ActivateGamepadFocus();
 /** After activation, transfer focus to a newly opened window if one appeared. */
 void UpdateGamepadFocusAfterActivation();
 
+/** Keep watching for a window opened by a delayed dropdown selection. */
+void RequestGamepadFocusTransfer();
+
+/** Tick the pending transfer watcher; call once per input loop. */
+void TickGamepadFocusTransfer();
+
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();
 

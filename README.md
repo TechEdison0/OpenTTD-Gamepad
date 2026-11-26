@@ -148,24 +148,26 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current test release — controller mapping feedback
+### Current release — C1 controller implementation
 
-`v20261125-c1e-controller-feedback-test` adds live feedback to the Controller window:
-each mapped row shows its current value — `pressed`/`released` for buttons, the raw
-number for axes and the hat bitfield for D-pads — refreshed every 100 ms for the
-selected controller. Trigger axes are only active once pulled away from their resting
-minimum; stick axes use a fixed magnitude threshold.
+`v20261126-c1-controller-implementation` completes the C1 controller layer. The main-menu
+**Controller** entry opens a launcher with **Controller Guide** and **Controllers &
+Mapping**. The guide is a plain `Button -> Description` list with sprite bullets and
+built-in arrow glyphs; the mapping window shows `Control`, `Mapping` and `Live` columns
+with the current value of every mapped input.
 
-It includes the full **mapping flow** from C1d: main menu →
-**Controller** → **Map Controller**, then follow 21 prompts covering every button,
-D-pad direction, stick axis and trigger. Captured values are stored per controller in
-`controller.cfg` beside `hotkeys.cfg` (`button:N`, `axis:N:min:max`, `hat:H:bits`) and
-reloaded on start; finishing the flow auto-saves, so no manual click is needed.
-Capture rules: buttons record on release with a short settle delay; stick axes must
-move past half travel and return before they count (measured from each axis' resting
-value, which matters because triggers rest at the SDL minimum); triggers accept either
-a digital button or an analog pull; D-pad records the hat direction when the pad has
-one. Gyroscope/accelerometer-style axes are excluded from mapping entirely.
+The mapping flow has **18 steps**: buttons, D-pad directions, stick axes and triggers.
+Back/Select/Start/Guide are intentionally absent because Android devices claim them as
+system buttons; pause is reserved for a simultaneous L3+R3 press. Sticks and triggers
+are captured with a ±22,000 detection threshold and always stored over the full SDL
+range (`-32768..32767`), so the direction of the test move cannot invert or truncate the
+mapping. Trigger axes read `-32768` until the first SDL event, so they are not active on
+first launch. After a capture, axis events are ignored for 500 ms so one gesture cannot
+map two axes.
+
+Captured values are stored per controller in `controller.cfg` beside `hotkeys.cfg`
+(`button:N`, `axis:N:min:max`, `hat:H:bits`) and reloaded on start; finishing the flow
+auto-saves. Gyroscope/accelerometer-style axes are excluded.
 
 Run it: Linux `./openttd`; Windows double-click `wine_launch.sh` (applies the Wine
 gamepad registry flags, video stays on win32); Android install the APK. Base
@@ -173,6 +175,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
 | `v20261125-c1e-controller-feedback-test` | live control values in the mapping list |
 | `v20261125-c1d-controller-mapping-test` | controller mapping capture, persistence per controller |
 | `v20261125-c1c-controller-selection-test` | controller detection, selection and persistence |

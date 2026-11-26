@@ -3,6 +3,43 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-26 — `v20261126-c1-controller-implementation` (C1 complete)
+
+Cut from `main`; Linux, Windows and Android artifacts built from that revision,
+`-DGAMEPAD_DEBUG_OFF` everywhere. Verified by hand on all three targets.
+
+### Added
+
+- **Controller launcher** under the main menu with **Controller Guide** and
+  **Controllers & Mapping** entries. Both new windows have dark panel backgrounds and
+  the launcher is centered.
+- **Controller Guide**: a plain `Button -> Description` list with indented examples,
+  built-in arrow glyphs and sprite bullets. The former schematic graphic was removed.
+- Inline glyph rendering for arrow control codes, so labels show real glyphs instead of
+  literal `{..._ARROW}` text. D-pad and stick labels use the same renderer.
+- Three-column mapping list (`Control`, `Mapping`, `Live`) with headers drawn at the
+  top of each column. Normal font throughout.
+
+### Fixed
+
+- Back/Select/Start/Guide are no longer prompted for; the flow is 18 steps. Pause is
+  reserved for L3+R3.
+- Trigger axes rest at `-32768` until the first SDL event, removing the green active
+  state on first launch and the need to double-click during mapping. Only axis-mapped
+  triggers are affected.
+- Axis capture now only identifies the axis (threshold ±22,000 from rest) and always
+  stores the full `-32768..32767` range. Direction-dependent min/max calibration and
+  inversion are gone.
+- Mapping no longer freezes after the first axis: the post-capture pause is a
+  time-based 500 ms ignore window, not a wait for another input event.
+- Added the two missing English strings for up/down arrow glyphs.
+
+### Notes
+
+- `controller.cfg` keys are unchanged (`button:N`, `axis:N:min:max`, `hat:H:bits`).
+- The hardcoded 1% runtime deadzone remains; settings/rebinding are deferred to the
+  hardening chunk.
+
 ## 2026-11-25 — `v20261125-c1e-controller-feedback-test` (pre-release, live map feedback)
 
 Cut from `main`; Linux, Windows and Android artifacts built from that revision,

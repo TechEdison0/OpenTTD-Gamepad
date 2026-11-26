@@ -14,6 +14,12 @@
 #include "dropdown_type.h"
 #include "window_gui.h"
 
+/** C3 focus support for dropdown menu items. @{ */
+int GetDropdownFocusItemCount(const Window *w);
+Rect GetDropdownFocusItemRect(const Window *w, int index);
+void ActivateDropdownFocusItem(Window *w, int index);
+/** @} */
+
 /* Show drop down menu containing a fixed list of strings */
 void ShowDropDownMenu(Window *w, std::span<const StringID> strings, int selected, WidgetID button, uint32_t disabled_mask, uint32_t hidden_mask, uint width = 0, DropDownOptions options = {}, std::string * const persistent_filter_text = nullptr);
 

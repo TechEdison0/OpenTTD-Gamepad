@@ -533,6 +533,52 @@ struct DropdownWindow : Window {
 	}
 };
 
+/** Get the visible, selectable dropdown item rectangles in screen coordinates. */
+static std::vector<Rect> GetDropdownFocusRects(const Window *w)
+{
+	std::vector<Rect> rects;
+	const DropdownWindow *dw = static_cast<const DropdownWindow *>(w);
+	const Rect ir = dw->GetWidget<NWidgetBase>(WID_DM_ITEMS)->GetCurrentRect()
+		.Shrink(WidgetDimensions::scaled.dropdownlist);
+	if (ir.Height() <= 0) return rects;
+
+	int y = -dw->vscroll->GetPosition();
+	for (const auto &item : dw->list) {
+		if (!dw->FilterByText(*item)) continue;
+		int item_height = item->Height();
+		if (y > ir.Height()) break;
+		if (y > -item_height && !item->masked && item->Selectable()) {
+			rects.push_back(ir.Translate(0, y).WithHeight(item_height).Translate(w->left, w->top));
+		}
+		y += item_height;
+	}
+	return rects;
+}
+
+int GetDropdownFocusItemCount(const Window *w)
+{
+	if (w == nullptr || w->window_class != WindowClass::DropdownMenu) return 0;
+	return static_cast<int>(GetDropdownFocusRects(w).size());
+}
+
+Rect GetDropdownFocusItemRect(const Window *w, int index)
+{
+	if (w == nullptr || w->window_class != WindowClass::DropdownMenu) return {};
+	auto rects = GetDropdownFocusRects(w);
+	if (index < 0 || static_cast<size_t>(index) >= rects.size()) return {};
+	return rects[index];
+}
+
+void ActivateDropdownFocusItem(Window *w, int index)
+{
+	Rect r = GetDropdownFocusItemRect(w, index);
+	if (r.Width() <= 0 || r.Height() <= 0) return;
+
+	Point screen{(r.left + r.right) / 2, (r.top + r.bottom) / 2};
+	_cursor.pos = screen;
+	w->OnClick({screen.x - w->left, screen.y - w->top}, WID_DM_ITEMS, 1);
+}
+
 void ReplaceDropDownList(Window *parent, DropDownList &&list, std::optional<int> selected_result)
 {
 	DropdownWindow *ddw = dynamic_cast<DropdownWindow *>(parent->FindChildWindow(WindowClass::DropdownMenu));

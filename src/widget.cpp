@@ -21,6 +21,7 @@
 #include "settings_type.h"
 #include "querystring_gui.h"
 #include "gamepad/focus.h"
+#include "dropdown_func.h"
 #include "palette_func.h"
 
 #include "table/sprites.h"
@@ -802,8 +803,13 @@ void Window::DrawWidgets() const
 	Window *focus_window = nullptr;
 	WidgetID focus_widget = -1;
 	if (GetGamepadFocus(focus_window, focus_widget) && focus_window == this) {
-		const NWidgetCore *focus_nw = this->GetWidget<NWidgetCore>(focus_widget);
-		if (focus_nw != nullptr) DrawRectOutline(focus_nw->GetCurrentRect().Shrink(1), PC_RED, 2);
+		if (this->window_class == WindowClass::DropdownMenu) {
+			Rect r = GetDropdownFocusItemRect(this, focus_widget).Translate(-this->left, -this->top);
+			if (r.Width() > 0 && r.Height() > 0) DrawRectOutline(r.Shrink(1), PC_RED, 2);
+		} else {
+			const NWidgetCore *focus_nw = this->GetWidget<NWidgetCore>(focus_widget);
+			if (focus_nw != nullptr) DrawRectOutline(focus_nw->GetCurrentRect().Shrink(1), PC_RED, 2);
+		}
 	}
 
 	if (this->flags.Test(WindowFlag::Highlighted)) {

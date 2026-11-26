@@ -409,6 +409,11 @@ bool IsControllerMapping()
 	return _mapping_active;
 }
 
+bool IsControllerMappingCalibrating()
+{
+	return _mapping_active && _mapping_phase == MappingPhase::Calibration;
+}
+
 std::string GetControllerMappingPrompt()
 {
 	if (!_mapping_active || _mapping_step >= _mapping_steps.size()) return {};
@@ -576,6 +581,9 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 		}
 		_mapping_phase = MappingPhase::Full;
 		ResetMappingStepState();
+		/* The gesture and the confirming A release can leave axis events in flight;
+		 * do not let those finish the first axis prompt for the user. */
+		_mapping_axis_ignore_until = SDL_GetTicks() + _mapping_axis_quiet_ms;
 		_controller_status = "mapping: follow the prompts";
 		InvalidateWindowData(WindowClass::Controller, 0);
 		return;

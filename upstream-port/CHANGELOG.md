@@ -13,6 +13,11 @@ file records only what this fork adds.
   learned rest instead of assuming `0` for sticks and `-32768` for triggers.
 - Removed the automatic startup rest-sampling routine; controllers that rest away from the
   assumed values, such as the 8BitDo Ultimate MG at `-128`, no longer auto-map every axis.
+- Gamepad-generated A clicks no longer activate the **Map Controller / Cancel** widget
+  when the crosshair is parked over it, so the A that confirms calibration cannot cancel
+  the flow.
+- A short axis ignore window is applied after calibration confirms to discard axis events
+  still in flight from the gesture.
 - `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
   four-field values still parse; their rest is inferred from the step type.
 

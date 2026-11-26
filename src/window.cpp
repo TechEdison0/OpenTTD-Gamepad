@@ -3182,6 +3182,7 @@ void HandleMouseEvents()
 void HandleGamepadButton(bool right, bool down)
 {
 	assert(HasModalProgress() || IsLocalCompany());
+	SetGamepadVirtualClick(true);
 	if (right) {
 		if (down) {
 			_right_button_down = true;
@@ -3204,6 +3205,7 @@ void HandleGamepadButton(bool right, bool down)
 			MouseLoop(MouseClick::None, 0);
 		}
 	}
+	SetGamepadVirtualClick(false);
 }
 
 /**

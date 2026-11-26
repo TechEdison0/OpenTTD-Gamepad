@@ -14,6 +14,7 @@
 #include "stdafx.h"
 
 #include "controller_gui.h"
+#include "gamepad/actions.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/controller_config.h"
 #include "window_gui.h"
@@ -225,6 +226,9 @@ public:
 				break;
 
 			case WID_CT_MAP:
+				/* A gamepad A press can land on this widget when the crosshair is parked
+				 * over it; that must never cancel an active mapping flow. */
+				if (IsGamepadVirtualClick()) break;
 				if (IsControllerMapping()) CancelControllerMapping(); else StartControllerMapping();
 				this->SetDirty();
 				break;

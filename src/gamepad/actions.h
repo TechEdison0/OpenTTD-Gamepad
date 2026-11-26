@@ -40,4 +40,10 @@ bool ConsumeGamepadCursorMovement();
 /** Consume mapped controller actions. Called once per tick from InputLoop(). */
 void HandleGamepadActions();
 
+/** True while a gamepad-generated virtual mouse click is being dispatched. */
+bool IsGamepadVirtualClick();
+
+/** Mark the start/end of a gamepad-generated virtual mouse click. */
+void SetGamepadVirtualClick(bool active);
+
 #endif /* GAMEPAD_ACTIONS_H */

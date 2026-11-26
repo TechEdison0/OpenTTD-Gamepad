@@ -46,6 +46,17 @@ static bool _right_held = false;
 static bool _ctrl_from_gamepad = false;
 static bool _shift_from_gamepad = false;
 static bool _gamepad_cursor_moved = false;
+static bool _gamepad_virtual_click = false;
+
+bool IsGamepadVirtualClick()
+{
+	return _gamepad_virtual_click;
+}
+
+void SetGamepadVirtualClick(bool active)
+{
+	_gamepad_virtual_click = active;
+}
 
 void NotifyKeyboardMouseActivity()
 {

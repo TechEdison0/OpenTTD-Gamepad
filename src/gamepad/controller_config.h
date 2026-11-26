@@ -79,6 +79,9 @@ const char *GetControllerMappingStepLabel(size_t step);
 /** Whether the mapping flow is currently capturing input. */
 bool IsControllerMapping();
 
+/** Whether the flow is waiting for the A-confirmed calibration gesture. */
+bool IsControllerMappingCalibrating();
+
 /**
  * Instruction for the current step, e.g. "Press A" / "Move Left stick X".
  * Empty when no mapping is in progress.

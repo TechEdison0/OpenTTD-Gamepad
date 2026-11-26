@@ -41,6 +41,9 @@ void ApplyGamepadStickResponse(int x, int y, int speed, int &out_x, int &out_y);
 /** Move the crosshair by a pixel delta. C3 D-pad snapping reuses this helper. */
 void MoveGamepadCursor(int delta_x, int delta_y);
 
+/** Snap the crosshair to an absolute screen position without marking mouse activity. */
+void SetGamepadCursorPosition(int x, int y);
+
 /** Whether the last cursor delta came from the gamepad, so KB/M activity must not be marked. */
 bool ConsumeGamepadCursorMovement();
 

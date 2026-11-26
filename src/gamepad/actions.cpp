@@ -175,6 +175,19 @@ bool ConsumeGamepadCursorMovement()
 	return moved;
 }
 
+void SetGamepadCursorPosition(int x, int y)
+{
+	int delta_x = x - _cursor.pos.x;
+	int delta_y = y - _cursor.pos.y;
+	_cursor.pos.x = x;
+	_cursor.pos.y = y;
+	_cursor.delta.x = delta_x;
+	_cursor.delta.y = delta_y;
+	_cursor.in_window = true;
+	_cursor.dirty = true;
+	_gamepad_cursor_moved = true;
+}
+
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
@@ -230,6 +243,7 @@ void HandleGamepadActions()
 	if (dispatch && edge[GAP_A] && !_left_held) {
 		if (IsGamepadFocusActive()) {
 			ActivateGamepadFocus();
+			UpdateGamepadFocusAfterActivation();
 		} else {
 			HandleGamepadButton(false, true);
 			_left_held = true;

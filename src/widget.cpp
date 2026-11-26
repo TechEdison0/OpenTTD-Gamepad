@@ -803,7 +803,7 @@ void Window::DrawWidgets() const
 	WidgetID focus_widget = -1;
 	if (GetGamepadFocus(focus_window, focus_widget) && focus_window == this) {
 		const NWidgetCore *focus_nw = this->GetWidget<NWidgetCore>(focus_widget);
-		if (focus_nw != nullptr) DrawRectOutline(focus_nw->GetCurrentRect().Shrink(1), PC_YELLOW, 2);
+		if (focus_nw != nullptr) DrawRectOutline(focus_nw->GetCurrentRect().Shrink(1), PC_RED, 2);
 	}
 
 	if (this->flags.Test(WindowFlag::Highlighted)) {

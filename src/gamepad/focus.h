@@ -31,6 +31,9 @@ void MoveGamepadFocus(GamepadFocusDirection direction);
 /** Activate the currently focused widget. */
 void ActivateGamepadFocus();
 
+/** After activation, transfer focus to a newly opened window if one appeared. */
+void UpdateGamepadFocusAfterActivation();
+
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();
 

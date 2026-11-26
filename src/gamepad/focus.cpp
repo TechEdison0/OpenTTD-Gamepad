@@ -12,6 +12,7 @@
 
 #include "../stdafx.h"
 #include "focus.h"
+#include "actions.h"
 #include "../window_gui.h"
 #include "../widget_type.h"
 #include "../gfx_func.h"
@@ -33,7 +34,7 @@ struct FocusCandidate {
 /** Check whether a widget should participate in focus navigation. */
 static bool IsFocusableWidget(const NWidgetCore *nw)
 {
-	if (nw == nullptr || nw->IsDisabled()) return false;
+	if (nw == nullptr || nw->IsDisabled() || nw->GetIndex() < 0) return false;
 
 	Rect r = nw->GetCurrentRect();
 	if (r.Width() <= 0 || r.Height() <= 0) return false;
@@ -41,13 +42,15 @@ static bool IsFocusableWidget(const NWidgetCore *nw)
 	switch (nw->type & WWT_MASK) {
 		case WWT_PUSHTXTBTN:
 		case WWT_TEXTBTN:
-		case WWT_PUSHBTN:
+		case WWT_PUSHIMGBTN:
 		case WWT_IMGBTN:
 		case WWT_BOOLBTN:
 		case WWT_IMGTEXTBTN:
 		case WWT_DROPDOWN:
 		case WWT_EDITBOX:
 		case WWT_CLOSEBOX:
+		case WWT_PANEL:
+		case WWT_INSET:
 			return true;
 		default:
 			return false;
@@ -94,79 +97,157 @@ void ClearGamepadFocus()
 	_gamepad_focus_widget = -1;
 }
 
-/** Collect focusable widgets from the front-most window that has any. */
-static std::vector<FocusCandidate> CollectCandidates(Window *&w)
+/** Collect actually rendered focusable widgets from the front-most window that has any. */
+static std::vector<FocusCandidate> CollectFrontCandidates(Window *&front)
 {
 	std::vector<FocusCandidate> candidates;
+	front = nullptr;
+
 	for (Window *candidate_window : Window::IterateFromFront()) {
 		for (const auto &pair : candidate_window->widget_lookup) {
 			NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
 			if (!IsFocusableWidget(nw)) continue;
 
-			candidates.push_back({candidate_window, nw->GetIndex(), nw->GetCurrentRect()});
+			Rect r = nw->GetCurrentRect();
+			int cx = (r.left + r.right) / 2;
+			int cy = (r.top + r.bottom) / 2;
+			if (GetWidgetFromPos(candidate_window, cx, cy) != nw->GetIndex()) continue;
+
+			candidates.push_back({candidate_window, nw->GetIndex(), r});
 		}
 		if (!candidates.empty()) {
-			w = candidate_window;
+			front = candidate_window;
 			return candidates;
 		}
 	}
 	return candidates;
 }
 
-/** Score one candidate relative to the current focus. Lower is better. */
-static int DirectionScore(const FocusCandidate &candidate, int cx, int cy, GamepadFocusDirection direction)
+static const FocusCandidate *FirstCandidate(const std::vector<FocusCandidate> &candidates)
 {
-	int dx = (candidate.rect.left + candidate.rect.right) / 2 - cx;
-	int dy = (candidate.rect.top + candidate.rect.bottom) / 2 - cy;
+	const FocusCandidate *best = nullptr;
+	int best_score = INT32_MAX;
+	for (const FocusCandidate &candidate : candidates) {
+		int score = candidate.rect.top * 1000 + candidate.rect.left;
+		if (score < best_score) {
+			best_score = score;
+			best = &candidate;
+		}
+	}
+	return best;
+}
 
+/** Perpendicular separation between two rectangles; zero when they overlap. */
+static int PerpendicularGap(const Rect &a, const Rect &b, bool horizontal)
+{
+	if (horizontal) {
+		if (a.top <= b.bottom && b.top <= a.bottom) return 0;
+		return a.top < b.top ? b.top - a.bottom : a.top - b.bottom;
+	}
+	if (a.left <= b.right && b.left <= a.right) return 0;
+	return a.left < b.left ? b.left - a.right : a.left - b.right;
+}
+
+/** Score one candidate relative to the current rectangle using rendered edges. */
+static int DirectionScore(const Rect &current, const FocusCandidate &candidate, GamepadFocusDirection direction)
+{
+	const Rect &next = candidate.rect;
 	switch (direction) {
-		case GamepadFocusDirection::Up:     if (dy >= 0) return INT32_MAX; return -dy * 100 + std::abs(dx) * 10;
-		case GamepadFocusDirection::Down:   if (dy <= 0) return INT32_MAX; return  dy * 100 + std::abs(dx) * 10;
-		case GamepadFocusDirection::Left:   if (dx >= 0) return INT32_MAX; return -dx * 100 + std::abs(dy) * 10;
-		case GamepadFocusDirection::Right:  if (dx <= 0) return INT32_MAX; return  dx * 100 + std::abs(dy) * 10;
+		case GamepadFocusDirection::Up:
+			if (next.bottom > current.top) return INT32_MAX;
+			return current.top - next.bottom + PerpendicularGap(current, next, false) * 4;
+		case GamepadFocusDirection::Down:
+			if (next.top < current.bottom) return INT32_MAX;
+			return next.top - current.bottom + PerpendicularGap(current, next, false) * 4;
+		case GamepadFocusDirection::Left:
+			if (next.right > current.left) return INT32_MAX;
+			return current.left - next.right + PerpendicularGap(current, next, true) * 4;
+		case GamepadFocusDirection::Right:
+			if (next.left < current.right) return INT32_MAX;
+			return next.left - current.right + PerpendicularGap(current, next, true) * 4;
 	}
 	return INT32_MAX;
 }
 
+/** Fallback score when there is no candidate in the pressed direction. */
+static int WrapScore(const FocusCandidate &candidate, GamepadFocusDirection direction)
+{
+	switch (direction) {
+		case GamepadFocusDirection::Up:    return -candidate.rect.bottom;
+		case GamepadFocusDirection::Down:  return  candidate.rect.top;
+		case GamepadFocusDirection::Left:  return -candidate.rect.right;
+		case GamepadFocusDirection::Right: return  candidate.rect.left;
+	}
+	return INT32_MAX;
+}
+
+static void SnapCursorToFocus()
+{
+	if (!IsGamepadFocusActive()) return;
+
+	NWidgetCore *nw = _gamepad_focus_window->GetWidget<NWidgetCore>(_gamepad_focus_widget);
+	if (nw == nullptr || !IsFocusableWidget(nw)) return;
+
+	Rect r = nw->GetCurrentRect();
+	SetGamepadCursorPosition(_gamepad_focus_window->left + (r.left + r.right) / 2,
+			_gamepad_focus_window->top + (r.top + r.bottom) / 2);
+}
+
+static void SetFocus(const FocusCandidate &candidate)
+{
+	MarkFocusDirty();
+	_gamepad_focus_window = candidate.w;
+	_gamepad_focus_widget = candidate.widget;
+	MarkFocusDirty();
+	SetFocusedWindow(candidate.w);
+	SnapCursorToFocus();
+}
+
 void MoveGamepadFocus(GamepadFocusDirection direction)
 {
-	Window *active_window = nullptr;
-	std::vector<FocusCandidate> candidates = CollectCandidates(active_window);
+	Window *front = nullptr;
+	std::vector<FocusCandidate> candidates = CollectFrontCandidates(front);
 	if (candidates.empty()) return;
 
-	if (_gamepad_focus_window != nullptr && _gamepad_focus_window != active_window) ClearGamepadFocus();
+	if (_gamepad_focus_window != nullptr && _gamepad_focus_window != front) ClearGamepadFocus();
 
-	int cx = 0;
-	int cy = 0;
+	Rect current{};
 	bool have_current = false;
-	if (_gamepad_focus_window == active_window && _gamepad_focus_widget >= 0) {
-		NWidgetCore *nw = active_window->GetWidget<NWidgetCore>(_gamepad_focus_widget);
+	if (_gamepad_focus_window == front && _gamepad_focus_widget >= 0) {
+		NWidgetCore *nw = front->GetWidget<NWidgetCore>(_gamepad_focus_widget);
 		if (IsFocusableWidget(nw)) {
-			Rect r = nw->GetCurrentRect();
-			cx = (r.left + r.right) / 2;
-			cy = (r.top + r.bottom) / 2;
-			have_current = true;
+			current = nw->GetCurrentRect();
+			int cx = (current.left + current.right) / 2;
+			int cy = (current.top + current.bottom) / 2;
+			if (GetWidgetFromPos(front, cx, cy) == _gamepad_focus_widget) have_current = true;
 		}
 	}
 
 	const FocusCandidate *best = nullptr;
 	int best_score = INT32_MAX;
 	for (const FocusCandidate &candidate : candidates) {
-		int score = have_current
-			? DirectionScore(candidate, cx, cy, direction)
-			: candidate.rect.top * 1000 + candidate.rect.left;
+		if (have_current && candidate.widget == _gamepad_focus_widget) continue;
+		int score = have_current ? DirectionScore(current, candidate, direction) : INT32_MAX;
 		if (score < best_score) {
 			best_score = score;
 			best = &candidate;
 		}
 	}
-	if (best == nullptr || best_score == INT32_MAX) return;
 
-	MarkFocusDirty();
-	_gamepad_focus_window = best->w;
-	_gamepad_focus_widget = best->widget;
-	MarkFocusDirty();
-	SetFocusedWindow(best->w);
+	if (best == nullptr || best_score == INT32_MAX) {
+		for (const FocusCandidate &candidate : candidates) {
+			if (have_current && candidate.widget == _gamepad_focus_widget) continue;
+			int score = WrapScore(candidate, direction);
+			if (score < best_score) {
+				best_score = score;
+				best = &candidate;
+			}
+		}
+	}
+	if (best == nullptr && !have_current) best = FirstCandidate(candidates);
+	if (best == nullptr) return;
+
+	SetFocus(*best);
 }
 
 void ActivateGamepadFocus()
@@ -175,6 +256,30 @@ void ActivateGamepadFocus()
 	WidgetID widget = -1;
 	if (!GetGamepadFocus(w, widget)) return;
 
-	w->OnHotkey(widget);
-	SetFocusedWindow(w);
+	NWidgetCore *nw = w->GetWidget<NWidgetCore>(widget);
+	if (nw == nullptr) return;
+
+	Rect r = nw->GetCurrentRect();
+	if ((nw->type & WWT_MASK) == WWT_EDITBOX) {
+		w->SetFocusedWidget(widget);
+		SetFocusedWindow(w);
+	} else {
+		Point pt{(r.left + r.right) / 2, (r.top + r.bottom) / 2};
+		w->OnClick(pt, widget, 1);
+	}
+}
+
+/** After activation, move focus to a newly opened window instead of staying on the button. */
+void UpdateGamepadFocusAfterActivation()
+{
+	Window *front = nullptr;
+	std::vector<FocusCandidate> candidates = CollectFrontCandidates(front);
+	if (candidates.empty()) {
+		ClearGamepadFocus();
+		return;
+	}
+	if (front == _gamepad_focus_window && _gamepad_focus_widget >= 0) return;
+
+	const FocusCandidate *first = FirstCandidate(candidates);
+	if (first != nullptr) SetFocus(*first);
 }

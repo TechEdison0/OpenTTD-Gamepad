@@ -85,34 +85,9 @@ static void UpdateModifiers(const std::array<bool, 18> &active)
 	if (_shift_from_gamepad) _shift_pressed = true;
 }
 
-/** Release any virtual mouse button still held when real KB/M input takes over. */
-static void ReleaseHeldButtons()
-{
-	if (_left_held) {
-		HandleGamepadButton(false, false);
-		_left_held = false;
-	}
-	if (_right_held) {
-		HandleGamepadButton(true, false);
-		_right_held = false;
-	}
-	if (_ctrl_from_gamepad) {
-		_ctrl_pressed = _ctrl_before_gamepad;
-		_ctrl_from_gamepad = false;
-	}
-	if (_shift_from_gamepad) {
-		_shift_pressed = _shift_before_gamepad;
-		_shift_from_gamepad = false;
-	}
-}
-
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
-
-	/* Real KB/M input wins. Drop any virtual mouse buttons we were holding so a
-	 * gamepad press cannot leave a click stuck down. */
-	if (_input_source == InputSource::KeyboardMouse) ReleaseHeldButtons();
 
 	std::array<bool, 18> active = {};
 	for (size_t i = 0; i < active.size(); i++) {
@@ -140,12 +115,13 @@ void HandleGamepadActions()
 	bool dispatch = _input_source == InputSource::Gamepad;
 
 	/* B close, D-pad focus, stick crosshair/pan and trigger zoom remain placeholders
-	 * until their respective C3/C5 chunks. Only the focus-independent actions dispatch. */
+	 * until their respective C3/C5 chunks. Presses yield to active KB/M input, but
+	 * releases always run: moving the mouse must not strand a held gamepad click. */
 	if (dispatch && edge[GAP_A] && !_left_held) {
 		HandleGamepadButton(false, true);
 		_left_held = true;
 	}
-	if (dispatch && release[GAP_A] && _left_held) {
+	if (release[GAP_A] && _left_held) {
 		HandleGamepadButton(false, false);
 		_left_held = false;
 	}
@@ -153,7 +129,7 @@ void HandleGamepadActions()
 		HandleGamepadButton(true, true);
 		_right_held = true;
 	}
-	if (dispatch && release[GAP_X] && _right_held) {
+	if (release[GAP_X] && _right_held) {
 		HandleGamepadButton(true, false);
 		_right_held = false;
 	}

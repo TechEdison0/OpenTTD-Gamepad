@@ -20,6 +20,9 @@ file records only what this fork adds.
 
 ### Fixes in manual pass
 
+- Mouse movement no longer cancels a held gamepad click. KB/M activity stops new pad
+  actions from starting, but A/X/shoulder releases are driven by the physical pad button,
+  so the mouse can still move the crosshair until left-stick crosshair lands in C3.
 - Held button state is polled from SDL on every action tick (`GetGamepadButtonHeld()`),
   not only inferred from the event watch. This fixes buttons that appeared to release
   early on Android and keeps A/X/LB/RB held for the full physical press.

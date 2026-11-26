@@ -176,10 +176,6 @@ graphics/sound/music sets are not included.
 | Release | Artifacts |
 |---|---|
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
-| `v20261125-c1e-controller-feedback-test` | live control values in the mapping list |
-| `v20261125-c1d-controller-mapping-test` | controller mapping capture, persistence per controller |
-| `v20261125-c1c-controller-selection-test` | controller detection, selection and persistence |
-| `v20261125-c1b-controller-gui-test` | Controller window UI milestone (no logic behind it) |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |
 

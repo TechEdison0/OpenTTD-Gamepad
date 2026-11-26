@@ -6028,6 +6028,8 @@ STR_CURRENCY_SHORT_TERA                                         :{NBSP}tn
 STR_JUST_CARGO                                                  :{CARGO_LONG}
 STR_JUST_LEFT_ARROW                                             :{LEFT_ARROW}
 STR_JUST_RIGHT_ARROW                                            :{RIGHT_ARROW}
+STR_JUST_UP_ARROW                                               :{UP_ARROW}
+STR_JUST_DOWN_ARROW                                             :{DOWN_ARROW}
 STR_JUST_CHECKMARK                                              :{CHECKMARK}
 STR_JUST_COMMA                                                  :{COMMA}
 STR_JUST_CURRENCY_SHORT                                         :{CURRENCY_SHORT}

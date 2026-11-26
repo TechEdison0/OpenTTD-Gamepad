@@ -17,4 +17,7 @@
 /** Open the controller settings window. */
 void ShowControllerWindow();
 
+/** Open the controller guide window. */
+void ShowControllerGuideWindow();
+
 #endif /* CONTROLLER_GUI_H */

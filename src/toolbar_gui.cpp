@@ -270,7 +270,7 @@ enum class OptionMenuEntries : uint8_t {
 	TransparentBuildings, ///< Toggle buildings transparency.
 	TransparentStationSigns, ///< Toggle transparency of signs and names.
 	AndroidAppSettings, ///< Open the settings of the Android app.
-	ControllerSettings, ///< Open the controller main menu (launcher).
+	ControllerGuide, ///< Open the controller guide.
 };
 
 /**
@@ -283,6 +283,7 @@ static CallBackFunction ToolbarOptionsClick(Window *w)
 {
 	DropDownList list;
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_GAME_OPTIONS, OptionMenuEntries::GameOptions));
+	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_CONTROLLER_GUIDE, OptionMenuEntries::ControllerGuide));
 	/* Changes to the per-AI settings don't get send from the server to the clients. Clients get
 	 * the settings once they join but never update it. As such don't show the window at all
 	 * to network clients. */
@@ -295,7 +296,6 @@ static CallBackFunction ToolbarOptionsClick(Window *w)
 		list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_SANDBOX_OPTIONS, OptionMenuEntries::SandboxOptions));
 	}
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS, OptionMenuEntries::Transparencies));
-	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_CONTROLLER, OptionMenuEntries::ControllerSettings));
 #ifdef __ANDROID__
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_ANDROID_APP_SETTINGS, OptionMenuEntries::AndroidAppSettings));
 #endif
@@ -335,7 +335,7 @@ static CallBackFunction MenuClickSettings(int index)
 		case OptionMenuEntries::NewGRFSettings: ShowNewGRFSettings(!_networking && _settings_client.gui.UserIsAllowedToChangeNewGRFs(), true, true, _grfconfig); return CallBackFunction::None;
 		case OptionMenuEntries::SandboxOptions: ShowCheatWindow(); break;
 		case OptionMenuEntries::Transparencies: ShowTransparencyToolbar(); break;
-		case OptionMenuEntries::ControllerSettings: ShowControllerWindow(); return CallBackFunction::None;
+		case OptionMenuEntries::ControllerGuide: ShowControllerGuideWindow(); return CallBackFunction::None;
 #ifdef __ANDROID__
 		case OptionMenuEntries::AndroidAppSettings: ShowAndroidAppSettings(); return CallBackFunction::None;
 #endif

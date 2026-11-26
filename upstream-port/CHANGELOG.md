@@ -24,8 +24,8 @@ file records only what this fork adds.
   radial deadzone (15%) plus a gamma-2 curve. The first quarter of post-deadzone travel
   stays fine (roughly 6% of max speed); the remaining three quarters ramp to full speed.
   C4 right-stick pan will call the same helper.
-- In-game options cog now has a **Controller** entry that opens the C1 launcher
-  (Controller Guide / Controllers & Mapping) without leaving the game.
+- In-game options cog now has a **Controller Guide** entry directly below Game Options;
+  it opens the guide window. The main-menu Controller launcher stays on the main menu.
 - LB/RB modifiers are now ORed into the video driver's `_ctrl_pressed`/`_shift_pressed`
   before its transition check. The driver previously reset Ctrl from the keyboard every
   tick while C2 forced it true, causing bulldoze to toggle every frame and leaving Ctrl

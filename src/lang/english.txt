@@ -453,7 +453,7 @@ STR_SETTINGS_MENU_NEWGRF_SETTINGS                               :NewGRF settings
 STR_SETTINGS_MENU_ANDROID_APP_SETTINGS                          :App settings (storage location)
 STR_SETTINGS_MENU_SANDBOX_OPTIONS                               :Sandbox options
 STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS                          :Transparency options
-STR_SETTINGS_MENU_CONTROLLER                                   :Controller
+STR_SETTINGS_MENU_CONTROLLER_GUIDE                             :Controller Guide
 STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED                          :Town names displayed
 STR_SETTINGS_MENU_STATION_NAMES_DISPLAYED                       :Station names displayed
 STR_SETTINGS_MENU_STATION_NAMES_TRAIN                           :Train stations

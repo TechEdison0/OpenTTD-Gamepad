@@ -45,6 +45,12 @@ file records only what this fork adds.
 - D-pad focus is confined to the active window until B closes it, so modal/new-game windows
   and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
 - Focus still transfers to a newly opened window after A activation.
+- D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
+  (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
+  selecting a new focus target.
+- The main toolbar save button (`WWT_IMGBTN_2`) is now focusable like the other toolbar buttons.
+- Crosshair position is saved when D-pad focus takes over and restored before left-stick
+  movement resumes; real mouse/touch activity discards the saved position.
 - Left-stick movement leaves focus mode and restores A as a held left click. Keyboard,
   mouse and touch activity also clear the focus ring.
 - Track touch as its own input source. QueryString edit boxes only raise the on-screen

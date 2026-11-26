@@ -44,6 +44,15 @@ void MoveGamepadCursor(int delta_x, int delta_y);
 /** Snap the crosshair to an absolute screen position without marking mouse activity. */
 void SetGamepadCursorPosition(int x, int y);
 
+/** Remember the crosshair position before D-pad focus takes over. */
+void SaveGamepadCursorPosition();
+
+/** Restore the remembered crosshair position when left-stick control resumes. */
+void RestoreGamepadCursorPosition();
+
+/** Forget the remembered crosshair position after real mouse/touch activity. */
+void DiscardGamepadCursorPosition();
+
 /** Whether the last cursor delta came from the gamepad, so KB/M activity must not be marked. */
 bool ConsumeGamepadCursorMovement();
 

@@ -53,6 +53,8 @@ static bool _shift_from_gamepad = false;
 static bool _gamepad_cursor_moved = false;
 static bool _gamepad_virtual_click = false;
 static bool _touch_activity_pending = false;
+static Point _saved_gamepad_cursor{};
+static bool _has_saved_gamepad_cursor = false;
 
 bool IsGamepadVirtualClick()
 {
@@ -69,6 +71,7 @@ void NotifyKeyboardMouseActivity()
 	if (!_suppress_input_source_mark) {
 		_input_source = InputSource::KeyboardMouse;
 		ClearGamepadFocus();
+		DiscardGamepadCursorPosition();
 	}
 }
 
@@ -78,6 +81,7 @@ void NotifyTouchActivity()
 	_input_source = InputSource::Touch;
 	_touch_activity_pending = true;
 	ClearGamepadFocus();
+	DiscardGamepadCursorPosition();
 }
 
 bool ConsumeTouchActivityMark()
@@ -188,6 +192,25 @@ void SetGamepadCursorPosition(int x, int y)
 	_gamepad_cursor_moved = true;
 }
 
+void SaveGamepadCursorPosition()
+{
+	if (_has_saved_gamepad_cursor) return;
+	_saved_gamepad_cursor = _cursor.pos;
+	_has_saved_gamepad_cursor = true;
+}
+
+void RestoreGamepadCursorPosition()
+{
+	if (!_has_saved_gamepad_cursor) return;
+	SetGamepadCursorPosition(_saved_gamepad_cursor.x, _saved_gamepad_cursor.y);
+	_has_saved_gamepad_cursor = false;
+}
+
+void DiscardGamepadCursorPosition()
+{
+	_has_saved_gamepad_cursor = false;
+}
+
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
@@ -205,6 +228,7 @@ void HandleGamepadActions()
 	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_LSTICK_X),
 			GetControllerMappingAxisValue(GAP_LSTICK_Y), CROSSHAIR_SPEED, delta_x, delta_y);
 	if (delta_x != 0 || delta_y != 0) {
+		RestoreGamepadCursorPosition();
 		MoveGamepadCursor(delta_x, delta_y);
 		ClearGamepadFocus();
 		_input_source = InputSource::Gamepad;

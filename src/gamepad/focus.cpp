@@ -45,6 +45,7 @@ static bool IsFocusableWidget(const NWidgetCore *nw)
 		case WWT_TEXTBTN:
 		case WWT_PUSHIMGBTN:
 		case WWT_IMGBTN:
+		case WWT_IMGBTN_2:
 		case WWT_BOOLBTN:
 		case WWT_IMGTEXTBTN:
 		case WWT_DROPDOWN:
@@ -56,6 +57,13 @@ static bool IsFocusableWidget(const NWidgetCore *nw)
 		default:
 			return false;
 	}
+}
+
+/** Windows that must never receive D-pad focus. */
+static bool IsExcludedFromGamepadFocus(const Window *w)
+{
+	/* The in-game bottom bar is WindowClass::Statusbar, not MainWindow. */
+	return w->window_class == WindowClass::Statusbar;
 }
 
 static void MarkFocusDirty()
@@ -106,6 +114,7 @@ void ClearGamepadFocus()
 static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 {
 	std::vector<FocusCandidate> candidates;
+	if (IsExcludedFromGamepadFocus(w)) return candidates;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
 		int count = GetDropdownFocusItemCount(w);
@@ -140,7 +149,12 @@ static Window *FrontWindowWithCandidates()
 /** Focus navigation is confined to the active window until B closes it. */
 static Window *GetActiveFocusWindow()
 {
-	if (FocusWindowAlive(_gamepad_focus_window)) return _gamepad_focus_window;
+	if (FocusWindowAlive(_gamepad_focus_window) &&
+			!IsExcludedFromGamepadFocus(_gamepad_focus_window) &&
+			!CollectWindowCandidates(_gamepad_focus_window).empty()) {
+		return _gamepad_focus_window;
+	}
+	ClearGamepadFocus();
 	return FrontWindowWithCandidates();
 }
 
@@ -248,6 +262,8 @@ void MoveGamepadFocus(GamepadFocusDirection direction)
 
 	std::vector<FocusCandidate> candidates = CollectWindowCandidates(active);
 	if (candidates.empty()) return;
+
+	if (!IsGamepadFocusActive()) SaveGamepadCursorPosition();
 
 	Rect current{};
 	bool have_current = false;

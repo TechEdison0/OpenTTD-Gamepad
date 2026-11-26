@@ -20,6 +20,13 @@ file records only what this fork adds.
 
 ### Fixes in manual pass
 
+- LB/RB modifiers are now ORed into the video driver's `_ctrl_pressed`/`_shift_pressed`
+  before its transition check. The driver previously reset Ctrl from the keyboard every
+  tick while C2 forced it true, causing bulldoze to toggle every frame and leaving Ctrl
+  inverted on release. `HandleCtrlChanged()` now fires once per real transition.
+- LT/RT zoom: one large step per press edge, held press does not auto-repeat. The
+  existing keyboard zoom hotkeys keep their own repeat behaviour.
+
 - Mouse movement no longer cancels a held gamepad click. KB/M activity stops new pad
   actions from starting, but A/X/shoulder releases are driven by the physical pad button,
   so the mouse can still move the crosshair until left-stick crosshair lands in C3.

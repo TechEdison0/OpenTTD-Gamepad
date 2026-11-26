@@ -10,6 +10,7 @@
 #include "../stdafx.h"
 #include "../openttd.h"
 #include "../gfx_func.h"
+#include "../gamepad/actions.h"
 #include "../blitter/factory.hpp"
 #include "../thread.h"
 #include "../progress.h"
@@ -726,6 +727,12 @@ void VideoDriver_SDL_Base::InputLoop()
 
 	_ctrl_pressed  = !!(mod & KMOD_CTRL);
 	_shift_pressed = !!(mod & KMOD_SHIFT);
+
+bool gamepad_ctrl;
+bool gamepad_shift;
+GetGamepadModifiers(gamepad_ctrl, gamepad_shift);
+_ctrl_pressed = _ctrl_pressed || gamepad_ctrl;
+_shift_pressed = _shift_pressed || gamepad_shift;
 
 	/* Speedup when pressing tab, except when using ALT+TAB
 	 * to switch to another application. */

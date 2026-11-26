@@ -28,8 +28,10 @@ enum GamepadActionStep : size_t {
 	GAP_Y       = 3,  ///< Cancel tool / abort build.
 	GAP_LSHOULDER = 4, ///< Held Ctrl modifier.
 	GAP_RSHOULDER = 5, ///< Held Shift modifier.
-	GAP_LSTICK  = 6,  ///< L3, combined with R3 for pause.
-	GAP_RSTICK  = 7,  ///< R3, combined with L3 for pause.
+	GAP_LSTICK  = 6,  ///< L3, pauses.
+	GAP_RSTICK  = 7,  ///< R3, toggles fast forward.
+	GAP_LTRIGGER = 16, ///< LT, zoom out.
+	GAP_RTRIGGER = 17, ///< RT, zoom in.
 };
 
 static InputSource _input_source = InputSource::KeyboardMouse;
@@ -39,8 +41,6 @@ static bool _left_held = false;
 static bool _right_held = false;
 static bool _ctrl_from_gamepad = false;
 static bool _shift_from_gamepad = false;
-static bool _ctrl_before_gamepad = false;
-static bool _shift_before_gamepad = false;
 
 void NotifyKeyboardMouseActivity()
 {
@@ -63,26 +63,18 @@ static void CancelToolWithGamepad()
 	_suppress_input_source_mark = false;
 }
 
-/** Apply or release LB/RB as held Ctrl/Shift without losing the keyboard's own state. */
+/** Track held LB/RB. The video driver ORs these with keyboard state so Ctrl/Shift
+ * changes are signalled once by HandleCtrlChanged(), not toggled every frame. */
 static void UpdateModifiers(const std::array<bool, 18> &active)
 {
-	if (active[GAP_LSHOULDER] && !_ctrl_from_gamepad) {
-		_ctrl_before_gamepad = _ctrl_pressed;
-		_ctrl_from_gamepad = true;
-	} else if (!active[GAP_LSHOULDER] && _ctrl_from_gamepad) {
-		_ctrl_pressed = _ctrl_before_gamepad;
-		_ctrl_from_gamepad = false;
-	}
-	if (_ctrl_from_gamepad) _ctrl_pressed = true;
+	_ctrl_from_gamepad = active[GAP_LSHOULDER];
+	_shift_from_gamepad = active[GAP_RSHOULDER];
+}
 
-	if (active[GAP_RSHOULDER] && !_shift_from_gamepad) {
-		_shift_before_gamepad = _shift_pressed;
-		_shift_from_gamepad = true;
-	} else if (!active[GAP_RSHOULDER] && _shift_from_gamepad) {
-		_shift_pressed = _shift_before_gamepad;
-		_shift_from_gamepad = false;
-	}
-	if (_shift_from_gamepad) _shift_pressed = true;
+void GetGamepadModifiers(bool &ctrl, bool &shift)
+{
+	ctrl = _ctrl_from_gamepad;
+	shift = _shift_from_gamepad;
 }
 
 void HandleGamepadActions()
@@ -109,6 +101,9 @@ void HandleGamepadActions()
 	/* L3 pauses on its own; R3 alone toggles fast forward. */
 	bool pause_edge = edge[GAP_LSTICK];
 	bool fastforward_edge = edge[GAP_RSTICK];
+	/* One zoom step per press; the keyboard hotkeys handle their own auto-repeat. */
+	bool zoom_in_edge = edge[GAP_RTRIGGER];
+	bool zoom_out_edge = edge[GAP_LTRIGGER];
 	_action_held = active;
 
 	if (any_edge) _input_source = InputSource::Gamepad;
@@ -136,4 +131,6 @@ void HandleGamepadActions()
 	if (dispatch && edge[GAP_Y]) CancelToolWithGamepad();
 	if (dispatch && pause_edge) HandleToolbarHotkey(MTHK_PAUSE);
 	if (dispatch && fastforward_edge) HandleToolbarHotkey(MTHK_FASTFORWARD);
+	if (dispatch && zoom_in_edge) HandleToolbarHotkey(MTHK_ZOOM_IN);
+	if (dispatch && zoom_out_edge) HandleToolbarHotkey(MTHK_ZOOM_OUT);
 }

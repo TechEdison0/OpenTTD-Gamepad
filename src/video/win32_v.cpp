@@ -11,6 +11,7 @@
 #include "../openttd.h"
 #include "../error_func.h"
 #include "../gfx_func.h"
+#include "../gamepad/actions.h"
 #include "../os/windows/win32.h"
 #include "../blitter/factory.hpp"
 #include "../core/geometry_func.hpp"
@@ -1004,6 +1005,12 @@ void VideoDriver_Win32Base::InputLoop()
 
 	_ctrl_pressed = this->has_focus && GetAsyncKeyState(VK_CONTROL) < 0;
 	_shift_pressed = this->has_focus && GetAsyncKeyState(VK_SHIFT) < 0;
+
+bool gamepad_ctrl;
+bool gamepad_shift;
+GetGamepadModifiers(gamepad_ctrl, gamepad_shift);
+_ctrl_pressed = _ctrl_pressed || gamepad_ctrl;
+_shift_pressed = _shift_pressed || gamepad_shift;
 
 	/* Speedup when pressing tab, except when using ALT+TAB
 	 * to switch to another application. */

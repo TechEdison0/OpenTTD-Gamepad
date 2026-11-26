@@ -30,7 +30,8 @@
 #include "cocoa_wnd.h"
 #include "../../blitter/factory.hpp"
 #include "../../framerate_type.h"
-#include "../../gfx_func.h"
+#include "../gfx_func.h"
+#include "../../gamepad/actions.h"
 #include "../../thread.h"
 #include "../../core/random_func.hpp"
 #include "../../progress.h"
@@ -449,6 +450,12 @@ void VideoDriver_Cocoa::InputLoop()
 
 	_ctrl_pressed = (cur_mods & ( _settings_client.gui.right_mouse_btn_emulation != RMBE_CONTROL ? NSEventModifierFlagControl : NSEventModifierFlagCommand)) != 0;
 	_shift_pressed = (cur_mods & NSEventModifierFlagShift) != 0;
+
+bool gamepad_ctrl;
+bool gamepad_shift;
+GetGamepadModifiers(gamepad_ctrl, gamepad_shift);
+_ctrl_pressed = _ctrl_pressed || gamepad_ctrl;
+_shift_pressed = _shift_pressed || gamepad_shift;
 
 	this->fast_forward_key_pressed = _tab_is_down;
 

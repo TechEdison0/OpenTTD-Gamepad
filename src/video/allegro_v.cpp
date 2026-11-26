@@ -18,6 +18,7 @@
 #include "../openttd.h"
 #include "../error_func.h"
 #include "../gfx_func.h"
+#include "../gamepad/actions.h"
 #include "../blitter/factory.hpp"
 #include "../core/random_func.hpp"
 #include "../core/math_func.hpp"
@@ -461,7 +462,13 @@ void VideoDriver_Allegro::InputLoop()
 	bool old_ctrl_pressed = _ctrl_pressed;
 
 	_ctrl_pressed  = !!(key_shifts & KB_CTRL_FLAG);
-	_shift_pressed = !!(key_shifts & KB_SHIFT_FLAG);
+	_shift_pressed  = !!(key_shifts & KB_SHIFT_FLAG);
+
+bool gamepad_ctrl;
+bool gamepad_shift;
+GetGamepadModifiers(gamepad_ctrl, gamepad_shift);
+_ctrl_pressed = _ctrl_pressed || gamepad_ctrl;
+_shift_pressed = _shift_pressed || gamepad_shift;
 
 	/* Speedup when pressing tab, except when using ALT+TAB
 	 * to switch to another application. */

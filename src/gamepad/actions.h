@@ -25,6 +25,9 @@ void NotifyKeyboardMouseActivity();
 /** Current input source. */
 InputSource GetInputSource();
 
+/** Gamepad-contributed modifier state; OR with the keyboard state in the video driver. */
+void GetGamepadModifiers(bool &ctrl, bool &shift);
+
 /** Consume mapped controller actions. Called once per tick from InputLoop(). */
 void HandleGamepadActions();
 

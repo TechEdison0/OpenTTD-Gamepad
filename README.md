@@ -148,12 +148,13 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C2 action layer
+### Current release — C2 playable controller layer
 
-`v20261126-c2-action-layer` completes C2 on top of the C1 controller layer. The main-menu
-**Controller** entry still opens the launcher with **Controller Guide** and **Controllers &
-Mapping**; the in-game options cog also has a **Controller Guide** entry directly below
-Game Options. The guide is a plain `Button -> Description` list with sprite bullets and
+`v20261126-c2-action-layer` is the first **playable** controller pass. The pad can move
+the crosshair across the whole UI and perform the functions needed to play, including held
+Ctrl/Shift modifiers for tools and build actions. The main-menu **Controller** entry still
+opens the launcher with **Controller Guide** and **Controllers & Mapping**; the in-game
+options cog also has a **Controller Guide** entry directly below Game Options. The guide is a plain `Button -> Description` list with sprite bullets and
 built-in arrow glyphs; the mapping window shows `Control`, `Mapping` and `Live` columns
 with the current value of every mapped input.
 
@@ -186,7 +187,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261126-c2-action-layer` | C2 action layer: held A/X, modifiers, crosshair, zoom, pause/fast-forward, normalized and raw axis mapping |
+| `v20261126-c2-action-layer` | C2 playable controller pass: full UI navigation, held A/X, Ctrl/Shift modifiers, crosshair, zoom, pause/fast-forward |
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |

@@ -122,9 +122,6 @@ const char *GetControllerMappingDescription(size_t step);
  */
 bool StartControllerMapping();
 
-/** Poll axis rest positions while startup calibration is active. */
-void TickControllerMapping();
-
 /** Abort the mapping flow, keeping whatever was already captured. */
 void CancelControllerMapping();
 

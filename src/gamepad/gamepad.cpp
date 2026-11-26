@@ -441,6 +441,19 @@ bool IsGamepadTriggerAxis(uint8_t index)
 	return false;
 }
 
+bool IsGamepadStickAxis(uint8_t index)
+{
+	if (_gamepad_selection < 0 || static_cast<size_t>(_gamepad_selection) >= _gamepad_slots.size()) return false;
+	const GamepadSlot &slot = _gamepad_slots[_gamepad_selection];
+	if (slot.gamecontroller == nullptr) return false;
+	for (SDL_GameControllerAxis axis : {SDL_CONTROLLER_AXIS_LEFTX, SDL_CONTROLLER_AXIS_LEFTY,
+			SDL_CONTROLLER_AXIS_RIGHTX, SDL_CONTROLLER_AXIS_RIGHTY}) {
+		SDL_GameControllerButtonBind bind = SDL_GameControllerGetBindForAxis(slot.gamecontroller, axis);
+		if (bind.bindType == SDL_CONTROLLER_BINDTYPE_AXIS && bind.value.axis == index) return true;
+	}
+	return false;
+}
+
 uint8_t GetGamepadLiveHat(uint8_t index)
 {
 	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);

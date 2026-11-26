@@ -3,14 +3,16 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-26 — C1 bugfix: calibrated axis rest positions
+## 2026-11-26 — C1 bugfix: explicit axis calibration gesture
 
-- Mapping startup samples incoming axis events for 750 ms and stores the **longest
-  stable value** as that axis's resting position. A brief tap during calibration cannot
-  become the baseline.
-- Axis detection and runtime activation now measure from the calibrated rest instead of
-  assuming `0` for sticks and `-32768` for triggers. This fixes controllers such as the
-  8BitDo Ultimate MG, whose axes rest near `-128` and were otherwise mapped immediately.
+- Mapping now starts with only the **Press A** step visible. After A is mapped, a prompt
+  asks the user to move both sticks in a circle, press and release LT/RT, release them,
+  then press A again. Only after that second A press do the remaining mapping steps appear.
+- The gesture records each stick/trigger axis's observed **minimum (resting)** and
+  **maximum** values from raw axis events. Axis detection and runtime activation use the
+  learned rest instead of assuming `0` for sticks and `-32768` for triggers.
+- Removed the automatic startup rest-sampling routine; controllers that rest away from the
+  assumed values, such as the 8BitDo Ultimate MG at `-128`, no longer auto-map every axis.
 - `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
   four-field values still parse; their rest is inferred from the step type.
 

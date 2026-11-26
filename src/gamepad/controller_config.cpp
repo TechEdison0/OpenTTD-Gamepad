@@ -22,6 +22,7 @@
 
 #include <SDL.h>
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <vector>
@@ -104,58 +105,53 @@ static constexpr uint32_t _mapping_settle_ms = 250;
 static constexpr uint32_t _mapping_axis_quiet_ms = 500;
 /** Hardcoded runtime deadzone for axes (about 1% of the full range). */
 static constexpr int16_t _mapping_deadzone = 327;
-/** Rest-detection window at the start of mapping. */
-static constexpr uint32_t _mapping_calibration_ms = 750;
+/** Maximum raw axis index tracked during the A-prompt calibration gesture. */
 static constexpr size_t MAX_CALIBRATION_AXES = 64;
 
 /** Values captured so far, indexed like #_mapping_steps. */
 static std::array<MappingValue, _mapping_steps.size()> _mapping_values;
 
 /** Mapping flow state. */
+enum class MappingPhase : uint8_t {
+	Idle,        ///< Not mapping.
+	AOnly,       ///< Waiting for A before showing the rest of the flow.
+	Calibration, ///< A mapped; waiting for the stick/trigger gesture and A again.
+	Full,        ///< All mapping steps visible and active.
+};
+
 static bool _mapping_active = false;
+static MappingPhase _mapping_phase = MappingPhase::Idle;
 static size_t _mapping_step = 0;
 static uint32_t _mapping_step_started = 0;
 /** Axis events before this tick are ignored after a capture. */
 static uint32_t _mapping_axis_ignore_until = 0;
 
-/** Tracks the longest stable value seen for one axis during startup calibration. */
-struct AxisRestSample {
-	int candidate = 0;          ///< Current run of identical samples.
-	uint32_t candidate_since = 0; ///< Start of the current run.
-	int best = 0;               ///< Longest stable value so far.
-	uint32_t best_duration = 0; ///< Duration of the longest stable run.
-	bool seen = false;          ///< Whether any sample was taken.
+/** Min/max observed while the user performs the calibration gesture. */
+struct AxisRangeSample {
+	int16_t min = 32767;  ///< Lowest value observed (resting value).
+	int16_t max = -32768; ///< Highest value observed (full deflection).
+	bool seen = false;    ///< Whether any sample was taken.
 };
 
-static std::array<AxisRestSample, MAX_CALIBRATION_AXES> _axis_rest_samples;
-static std::array<int16_t, MAX_CALIBRATION_AXES> _mapping_axis_rest = {};
-static bool _mapping_calibrating = false;
-static uint32_t _mapping_calibration_started = 0;
+static std::array<AxisRangeSample, MAX_CALIBRATION_AXES> _axis_range_samples;
+static std::array<int16_t, MAX_CALIBRATION_AXES> _axis_rest = {};
+static std::array<int16_t, MAX_CALIBRATION_AXES> _axis_max = {};
+static std::array<bool, MAX_CALIBRATION_AXES> _axis_calibrated = {};
 
-/**
- * Feed one axis sample into startup calibration. Events are used rather than polling
- * SDL directly, so the baseline comes from exactly the values mapping will see.
- */
-static void SampleAxisRest(uint8_t axis, int value, uint32_t now)
+/** Feed one axis event into the A-prompt calibration gesture. */
+static void SampleAxisRange(uint8_t axis, int value)
 {
 	if (axis >= MAX_CALIBRATION_AXES) return;
-	AxisRestSample &sample = _axis_rest_samples[axis];
+	AxisRangeSample &sample = _axis_range_samples[axis];
+	int16_t sample_value = static_cast<int16_t>(std::clamp(value, -32768, 32767));
 	if (!sample.seen) {
 		sample.seen = true;
-		sample.candidate = value;
-		sample.candidate_since = now;
-		sample.best = value;
-		sample.best_duration = 0;
-	} else if (value != sample.candidate) {
-		/* A brief tap resets the current run but cannot erase a longer rest run. */
-		sample.candidate = value;
-		sample.candidate_since = now;
+		sample.min = sample_value;
+		sample.max = sample_value;
+		return;
 	}
-	uint32_t duration = now - sample.candidate_since;
-	if (duration > sample.best_duration) {
-		sample.best_duration = duration;
-		sample.best = value;
-	}
+	sample.min = std::min(sample.min, sample_value);
+	sample.max = std::max(sample.max, sample_value);
 }
 
 /** Human-readable name of a hat direction bitfield. */
@@ -306,35 +302,19 @@ static int16_t DefaultAxisRest(uint8_t axis)
 	return IsGamepadTriggerAxis(axis) ? -32768 : 0;
 }
 
-void TickControllerMapping()
-{
-	if (!_mapping_active || !_mapping_calibrating) return;
-
-	uint32_t now = SDL_GetTicks();
-	if (GetGamepadSelection() < 0) {
-		_mapping_calibrating = false;
-		return;
-	}
-
-	if (static_cast<int32_t>(now - _mapping_calibration_started) >= static_cast<int32_t>(_mapping_calibration_ms)) {
-		for (size_t i = 0; i < MAX_CALIBRATION_AXES; i++) {
-			const AxisRestSample &sample = _axis_rest_samples[i];
-			_mapping_axis_rest[i] = sample.seen ? static_cast<int16_t>(sample.best) : DefaultAxisRest(static_cast<uint8_t>(i));
-		}
-		_mapping_calibrating = false;
-		ResetMappingStepState();
-		_controller_status = "mapping: follow the prompts";
-		InvalidateWindowData(WindowClass::Controller, 0);
-	}
-}
-
 /** Store the axis just detected and move on. */
 static void RecordAxisAndAdvance(uint8_t axis)
 {
-	/* SDL axes always span the full 16-bit range regardless of how far the user
-	 * happened to move the stick during capture. */
-	_mapping_values[_mapping_step] = MappingValue{MappingKind::Axis, axis, -32768, 32767,
-			_mapping_axis_rest[axis], 0};
+	int16_t rest = axis < MAX_CALIBRATION_AXES && _axis_calibrated[axis]
+		? _axis_rest[axis] : DefaultAxisRest(axis);
+	int16_t maximum = axis < MAX_CALIBRATION_AXES && _axis_calibrated[axis]
+		? _axis_max[axis] : static_cast<int16_t>(32767);
+	if (maximum <= rest) {
+		int promoted = std::clamp(static_cast<int>(rest) + 32767, -32768, 32767);
+		maximum = static_cast<int16_t>(promoted);
+	}
+
+	_mapping_values[_mapping_step] = MappingValue{MappingKind::Axis, axis, rest, maximum, rest, 0};
 	_mapping_step++;
 	ResetMappingStepState();
 	_mapping_axis_ignore_until = SDL_GetTicks() + _mapping_axis_quiet_ms;
@@ -345,6 +325,7 @@ static void AdvanceMappingStep()
 {
 	if (_mapping_step >= _mapping_steps.size()) {
 		_mapping_active = false;
+		_mapping_phase = MappingPhase::Idle;
 		WriteConfigFile(SelectedGuid(), _mapping_values);
 		InvalidateWindowData(WindowClass::Controller, 0);
 		return;
@@ -431,7 +412,10 @@ bool IsControllerMapping()
 std::string GetControllerMappingPrompt()
 {
 	if (!_mapping_active || _mapping_step >= _mapping_steps.size()) return {};
-	if (_mapping_calibrating) return "Hold controls still: detecting resting axis positions";
+	if (_mapping_phase == MappingPhase::Calibration) {
+		return "Move left / right stick in a circle, press and release LT / RT, "
+				"release sticks and triggers, press A to continue";
+	}
 	const MappingStepDef &step = _mapping_steps[_mapping_step];
 	if (step.flag == MAPPING_STEP_AXIS) {
 		return fmt::format("Move {} (one direction, then release) - step {} of {}",
@@ -443,7 +427,8 @@ std::string GetControllerMappingPrompt()
 std::vector<std::pair<std::string, std::string>> GetControllerMappingRows()
 {
 	std::vector<std::pair<std::string, std::string>> rows;
-	for (size_t i = 0; i < _mapping_steps.size(); i++) {
+	size_t shown = _mapping_active && _mapping_phase != MappingPhase::Full ? 1 : _mapping_steps.size();
+	for (size_t i = 0; i < shown; i++) {
 		std::string value = DescribeMappingValue(_mapping_values[i]);
 		rows.emplace_back(_mapping_steps[i].label, value.empty() ? "—" : std::move(value));
 	}
@@ -526,17 +511,14 @@ bool StartControllerMapping()
 		return false;
 	}
 	_mapping_values.fill(MappingValue{});
-	_axis_rest_samples.fill(AxisRestSample{});
-	for (size_t i = 0; i < MAX_CALIBRATION_AXES; i++) {
-		_mapping_axis_rest[i] = DefaultAxisRest(static_cast<uint8_t>(i));
-	}
+	_axis_range_samples.fill(AxisRangeSample{});
+	_axis_calibrated.fill(false);
 	_mapping_step = 0;
 	_mapping_active = true;
+	_mapping_phase = MappingPhase::AOnly;
 	_mapping_axis_ignore_until = 0;
-	_mapping_calibrating = true;
-	_mapping_calibration_started = SDL_GetTicks();
 	ResetMappingStepState();
-	_controller_status = "mapping: detecting resting axis positions (hold controls still)";
+	_controller_status = "mapping: press A, then perform the calibration gesture";
 	InvalidateWindowData(WindowClass::Controller, 0);
 	return true;
 }
@@ -544,7 +526,7 @@ bool StartControllerMapping()
 void CancelControllerMapping()
 {
 	_mapping_active = false;
-	_mapping_calibrating = false;
+	_mapping_phase = MappingPhase::Idle;
 	_mapping_axis_ignore_until = 0;
 	_controller_status = "mapping cancelled";
 	InvalidateWindowData(WindowClass::Controller, 0);
@@ -554,24 +536,52 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 {
 	if (!_mapping_active || _mapping_step >= _mapping_steps.size()) return;
 
-	if (_mapping_calibrating) {
-		/* Baseline from the exact event stream the mapping flow consumes. */
-		if (type == ControllerInputEventType::AxisMotion && IsSelectedControllerAxis(index)) {
-			SampleAxisRest(index, static_cast<int>(value), SDL_GetTicks());
-		}
-		return;
-	}
-
-	const MappingStepDef &step = _mapping_steps[_mapping_step];
-	bool settled = SDL_GetTicks() - _mapping_step_started >= _mapping_settle_ms;
-
 	auto record_button = [&](uint8_t button) {
-		_mapping_values[_mapping_step] = MappingValue{MappingKind::Button, button, -32768, 32767, 0};
+		_mapping_values[_mapping_step] = MappingValue{MappingKind::Button, button, -32768, 32767, 0, 0};
 		_mapping_step++;
 		ResetMappingStepState();
 		AdvanceMappingStep();
 	};
 
+	bool settled = SDL_GetTicks() - _mapping_step_started >= _mapping_settle_ms;
+
+	if (_mapping_phase == MappingPhase::AOnly) {
+		if (settled && type == ControllerInputEventType::ButtonUp) record_button(index);
+		if (_mapping_step != 1) return;
+
+		/* A is mapped. Show only the gesture prompt until A is pressed again. */
+		_mapping_phase = MappingPhase::Calibration;
+		_axis_range_samples.fill(AxisRangeSample{});
+		ResetMappingStepState();
+		_controller_status = "mapping: calibrate sticks and triggers, then press A";
+		InvalidateWindowData(WindowClass::Controller, 0);
+		return;
+	}
+
+	if (_mapping_phase == MappingPhase::Calibration) {
+		if (type == ControllerInputEventType::AxisMotion && IsSelectedControllerAxis(index) &&
+				(IsGamepadStickAxis(index) || IsGamepadTriggerAxis(index))) {
+			SampleAxisRange(index, static_cast<int>(value));
+		}
+		bool a_released = type == ControllerInputEventType::ButtonUp &&
+				_mapping_values[0].kind == MappingKind::Button && index == _mapping_values[0].index;
+		if (!settled || !a_released) return;
+
+		for (size_t i = 0; i < MAX_CALIBRATION_AXES; i++) {
+			const AxisRangeSample &sample = _axis_range_samples[i];
+			if (!sample.seen) continue;
+			_axis_rest[i] = sample.min;
+			_axis_max[i] = sample.max;
+			_axis_calibrated[i] = true;
+		}
+		_mapping_phase = MappingPhase::Full;
+		ResetMappingStepState();
+		_controller_status = "mapping: follow the prompts";
+		InvalidateWindowData(WindowClass::Controller, 0);
+		return;
+	}
+
+	const MappingStepDef &step = _mapping_steps[_mapping_step];
 	switch (type) {
 		case ControllerInputEventType::ButtonUp:
 			if (!settled) break;
@@ -584,7 +594,7 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 		case ControllerInputEventType::HatMotion:
 			if (!settled || step.flag != MAPPING_STEP_DPAD) break;
 			if (value != SDL_HAT_CENTERED) {
-				_mapping_values[_mapping_step] = MappingValue{MappingKind::Hat, index, -32768, 32767, static_cast<uint8_t>(value)};
+				_mapping_values[_mapping_step] = MappingValue{MappingKind::Hat, index, -32768, 32767, 0, static_cast<uint8_t>(value)};
 				_mapping_step++;
 				ResetMappingStepState();
 				AdvanceMappingStep();
@@ -594,15 +604,14 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 		case ControllerInputEventType::AxisMotion: {
 			if (step.flag != MAPPING_STEP_AXIS && step.flag != MAPPING_STEP_TRIGGER) break;
 			if (!IsSelectedControllerAxis(index)) break;
+			if (index >= MAX_CALIBRATION_AXES || !_axis_calibrated[index]) break;
 
 			uint32_t now = SDL_GetTicks();
 			/* Time-based ignore: no dependency on further axis events, so mapping
 			 * cannot freeze if the user releases a stick and waits. */
 			if (now < _mapping_axis_ignore_until) break;
 			if (!settled) break;
-			/* Detect movement beyond the threshold from this controller's calibrated
-			 * resting value, not an assumed 0 / -32768. */
-			int rest = index < MAX_CALIBRATION_AXES ? _mapping_axis_rest[index] : DefaultAxisRest(index);
+			int rest = static_cast<int>(_axis_rest[index]);
 			if (std::abs(static_cast<int>(value) - rest) <= _mapping_axis_threshold) break;
 			RecordAxisAndAdvance(index);
 			AdvanceMappingStep();

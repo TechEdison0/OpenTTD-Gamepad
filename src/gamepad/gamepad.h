@@ -79,6 +79,9 @@ int16_t GetGamepadLiveAxis(uint8_t index);
 /** Whether a raw axis index is a trigger axis on the selected controller. */
 bool IsGamepadTriggerAxis(uint8_t index);
 
+/** Whether a raw axis index is a stick axis on the selected controller. */
+bool IsGamepadStickAxis(uint8_t index);
+
 /** Current hat bitfield of the selected controller (centered when unavailable). */
 uint8_t GetGamepadLiveHat(uint8_t index);
 

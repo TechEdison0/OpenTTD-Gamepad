@@ -34,6 +34,10 @@ file records only what this fork adds.
 ## 2026-11-26 — C3 focus model: touch-gated OSK
 
 ### Added
+- Geometric D-pad focus over live widget rectangles, with a yellow focus ring drawn from
+  `Window::DrawWidgets()`. A activates the focused widget; B closes the focused window.
+- Left-stick movement leaves focus mode and restores A as a held left click. Keyboard,
+  mouse and touch activity also clear the focus ring.
 - Track touch as its own input source. QueryString edit boxes only raise the on-screen
   keyboard when touch opened or activated the control; controller, keyboard and mouse
   activation no longer triggers it.

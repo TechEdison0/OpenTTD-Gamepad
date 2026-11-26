@@ -73,22 +73,21 @@ static constexpr std::array<MappingStepDef, 18> _mapping_steps = {{
 
 /**
  * Hardcoded in-game function of each mapping slot (C1f). The controller remapping only
- * decides which physical control feeds a slot; C2/C3 placeholders are marked as such
- * and have no runtime behavior yet.
+ * decides which physical control feeds a slot; C4 right-stick pan is still a placeholder.
  */
 static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descriptions = {{
 	"Left click / hold-drag",
-	"Close focused widget (C3 placeholder)",
+	"Close focused window",
 	"Right click",
 	"Esc: cancel tool / abort build",
 	"Hold: Ctrl modifier",
 	"Hold: Shift modifier",
 	"L3: pause/resume",
 	"R3: fast forward toggle",
-	"Focus up (C3)",
-	"Focus down (C3)",
-	"Focus left (C3)",
-	"Focus right (C3)",
+	"Focus up",
+	"Focus down",
+	"Focus left",
+	"Focus right",
 	"Crosshair (C2)",
 	"Crosshair (C2)",
 	"Pan (C2 placeholder)",

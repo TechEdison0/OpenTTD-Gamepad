@@ -13,6 +13,7 @@
 #include "../stdafx.h"
 #include "actions.h"
 #include "controller_config.h"
+#include "focus.h"
 #include "gamepad.h"
 #include "../gfx_func.h"
 #include "../toolbar_gui.h"
@@ -32,6 +33,10 @@ enum GamepadActionStep : size_t {
 	GAP_RSHOULDER = 5, ///< Held Shift modifier.
 	GAP_LSTICK  = 6,  ///< L3, pauses.
 	GAP_RSTICK  = 7,  ///< R3, toggles fast forward.
+	GAP_DPAD_UP = 8,   ///< D-pad up, focus navigation.
+	GAP_DPAD_DOWN = 9, ///< D-pad down, focus navigation.
+	GAP_DPAD_LEFT = 10,///< D-pad left, focus navigation.
+	GAP_DPAD_RIGHT = 11,///< D-pad right, focus navigation.
 	GAP_LTRIGGER = 16, ///< LT, zoom out.
 	GAP_RTRIGGER = 17, ///< RT, zoom in.
 	GAP_LSTICK_X = 12, ///< Left stick horizontal, crosshair.
@@ -61,7 +66,10 @@ void SetGamepadVirtualClick(bool active)
 
 void NotifyKeyboardMouseActivity()
 {
-	if (!_suppress_input_source_mark) _input_source = InputSource::KeyboardMouse;
+	if (!_suppress_input_source_mark) {
+		_input_source = InputSource::KeyboardMouse;
+		ClearGamepadFocus();
+	}
 }
 
 void NotifyTouchActivity()
@@ -69,6 +77,7 @@ void NotifyTouchActivity()
 	if (_suppress_input_source_mark) return;
 	_input_source = InputSource::Touch;
 	_touch_activity_pending = true;
+	ClearGamepadFocus();
 }
 
 bool ConsumeTouchActivityMark()
@@ -76,6 +85,14 @@ bool ConsumeTouchActivityMark()
 	bool pending = _touch_activity_pending;
 	_touch_activity_pending = false;
 	return pending;
+}
+
+void CloseGamepadFocusWindow()
+{
+	_suppress_input_source_mark = true;
+	HandleBackButton();
+	_suppress_input_source_mark = false;
+	ClearGamepadFocus();
 }
 
 InputSource GetInputSource()
@@ -176,6 +193,7 @@ void HandleGamepadActions()
 			GetControllerMappingAxisValue(GAP_LSTICK_Y), CROSSHAIR_SPEED, delta_x, delta_y);
 	if (delta_x != 0 || delta_y != 0) {
 		MoveGamepadCursor(delta_x, delta_y);
+		ClearGamepadFocus();
 		_input_source = InputSource::Gamepad;
 	}
 
@@ -202,12 +220,20 @@ void HandleGamepadActions()
 	if (any_edge) _input_source = InputSource::Gamepad;
 	bool dispatch = _input_source == InputSource::Gamepad;
 
-	/* B close, D-pad focus, stick crosshair/pan and trigger zoom remain placeholders
-	 * until their respective C3/C5 chunks. Presses yield to active KB/M input, but
-	 * releases always run: moving the mouse must not strand a held gamepad click. */
+	/* C3 focus navigation. Presses yield to active KB/M input, but releases always run:
+	 * moving the mouse must not strand a held gamepad click. */
+	if (dispatch && edge[GAP_DPAD_UP]) MoveGamepadFocus(GamepadFocusDirection::Up);
+	if (dispatch && edge[GAP_DPAD_DOWN]) MoveGamepadFocus(GamepadFocusDirection::Down);
+	if (dispatch && edge[GAP_DPAD_LEFT]) MoveGamepadFocus(GamepadFocusDirection::Left);
+	if (dispatch && edge[GAP_DPAD_RIGHT]) MoveGamepadFocus(GamepadFocusDirection::Right);
+
 	if (dispatch && edge[GAP_A] && !_left_held) {
-		HandleGamepadButton(false, true);
-		_left_held = true;
+		if (IsGamepadFocusActive()) {
+			ActivateGamepadFocus();
+		} else {
+			HandleGamepadButton(false, true);
+			_left_held = true;
+		}
 	}
 	if (release[GAP_A] && _left_held) {
 		HandleGamepadButton(false, false);
@@ -221,6 +247,7 @@ void HandleGamepadActions()
 		HandleGamepadButton(true, false);
 		_right_held = false;
 	}
+	if (dispatch && edge[GAP_B]) CloseGamepadFocusWindow();
 	if (dispatch && edge[GAP_Y]) CancelToolWithGamepad();
 	if (dispatch && pause_edge) HandleToolbarHotkey(MTHK_PAUSE);
 	if (dispatch && fastforward_edge) HandleToolbarHotkey(MTHK_FASTFORWARD);

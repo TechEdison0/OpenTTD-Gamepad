@@ -20,6 +20,8 @@
 #include "core/geometry_func.hpp"
 #include "settings_type.h"
 #include "querystring_gui.h"
+#include "gamepad/focus.h"
+#include "palette_func.h"
 
 #include "table/sprites.h"
 #include "table/strings.h"
@@ -795,6 +797,13 @@ void Window::DrawWidgets() const
 
 	if (this->flags.Test(WindowFlag::WhiteBorder)) {
 		DrawFrameRect(0, 0, this->width - 1, this->height - 1, Colours::White, FrameFlag::BorderOnly);
+	}
+
+	Window *focus_window = nullptr;
+	WidgetID focus_widget = -1;
+	if (GetGamepadFocus(focus_window, focus_widget) && focus_window == this) {
+		const NWidgetCore *focus_nw = this->GetWidget<NWidgetCore>(focus_widget);
+		if (focus_nw != nullptr) DrawRectOutline(focus_nw->GetCurrentRect().Shrink(1), PC_YELLOW, 2);
 	}
 
 	if (this->flags.Test(WindowFlag::Highlighted)) {

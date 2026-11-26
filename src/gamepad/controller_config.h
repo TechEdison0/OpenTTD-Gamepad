@@ -105,6 +105,9 @@ bool IsControllerMappingControlActive(size_t step);
  */
 std::string GetControllerMappingLiveText(size_t step);
 
+/** In-game function assigned to a mapping step; hardcoded for C1f. */
+const char *GetControllerMappingDescription(size_t step);
+
 /**
  * Start capturing a mapping for the selected controller.
  *

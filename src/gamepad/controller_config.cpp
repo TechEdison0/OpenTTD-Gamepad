@@ -73,6 +73,35 @@ static constexpr std::array<MappingStepDef, 21> _mapping_steps = {{
 	{"righttrigger",  "Right trigger",  MAPPING_STEP_TRIGGER},
 }};
 
+/**
+ * Hardcoded in-game function of each mapping slot (C1f). The controller remapping only
+ * decides which physical control feeds a slot; C2/C3 placeholders are marked as such
+ * and have no runtime behavior yet.
+ */
+static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descriptions = {{
+	"Left click / hold-drag",
+	"Close focused widget (C3 placeholder)",
+	"Right click",
+	"Esc: cancel tool / abort build",
+	"Hold: Ctrl modifier",
+	"Hold: Shift modifier",
+	"Save game",
+	"Pause / resume",
+	"Hold 3 s: save and quit (silent)",
+	"L3 - unassigned",
+	"R3 - unassigned",
+	"Focus up (C3)",
+	"Focus down (C3)",
+	"Focus left (C3)",
+	"Focus right (C3)",
+	"Crosshair X (C2, 1% deadzone)",
+	"Crosshair Y (C2, 1% deadzone)",
+	"Viewport pan X (C2 placeholder)",
+	"Viewport pan Y (C2 placeholder)",
+	"Zoom out (C2, 1% deadzone)",
+	"Zoom in (C2, 1% deadzone)",
+}};
+
 /** Movement needed before an axis counts as deliberate input. */
 static constexpr int16_t _mapping_axis_threshold = 16384;
 /** Ignore inputs shortly after a prompt appears, so held controls do not leak in. */
@@ -324,6 +353,12 @@ const char *GetControllerMappingStepLabel(size_t step)
 {
 	if (step >= _mapping_steps.size()) return "";
 	return _mapping_steps[step].label;
+}
+
+const char *GetControllerMappingDescription(size_t step)
+{
+	if (step >= _mapping_descriptions.size()) return "";
+	return _mapping_descriptions[step];
 }
 
 bool IsControllerMapping()

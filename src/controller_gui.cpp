@@ -55,7 +55,7 @@ static constexpr std::initializer_list<NWidgetPart> _controller_widgets = {
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_LOAD), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_LOAD, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CT_SAVE), SetMinimalSize(60, 12), SetStringTip(STR_CONTROLLER_SAVE, STR_NULL),
 			EndContainer(),
-			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(460, 260), SetFill(1, 1),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CT_LIST), SetMinimalSize(640, 300), SetFill(1, 1),
 		EndContainer(),
 	EndContainer(),
 };
@@ -166,17 +166,17 @@ public:
 		if (widget != WID_CT_LIST) return;
 		GfxFillRect(r, PC_BLACK);
 
-		/* Column boundaries are fractions of the widget, not fixed pixels: the window is
-		 * scaled on high-DPI devices, so a static offset clips text on Android. Small
-		 * text keeps the longest axis value readable in the middle column. */
+		/* Four columns sized as fractions of the widget: fixed offsets clip text on
+		 * high-DPI screens. Dense rows use small text; headers and status stay normal. */
 		const int header_height = GetCharacterHeight(FontSize::Normal);
 		const int row_height = GetCharacterHeight(FontSize::Small);
 		const int list_width = r.right - r.left;
-		const int label_end = r.left + list_width * 38 / 100;
-		const int value_end = r.left + list_width * 76 / 100;
+		const int label_end = r.left + list_width * 26 / 100;
+		const int value_end = r.left + list_width * 50 / 100;
+		const int live_end = r.left + list_width * 65 / 100;
 		int y = r.top;
 
-		DrawString(r.left, r.right, y, "Control / Mapping / Live", TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
+		DrawString(r.left, r.right, y, "Control / Mapping / Live / In-game function", TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
 		y += header_height;
 
 		std::string prompt = GetControllerMappingPrompt();
@@ -187,32 +187,30 @@ public:
 
 		auto rows = GetControllerMappingRows();
 		size_t current = rows.size();
-		bool any_set = false;
 		for (size_t i = 0; i < rows.size(); i++) {
 			if (rows[i].second == "—") {
 				current = i; /* the step currently being captured */
 				break;
 			}
-			any_set = true;
 		}
 
-		if (!any_set && prompt.empty()) {
-			DrawString(r.left, r.right, y, "(no mapping)", TextColour::White, AlignmentH::Start, false, FontSize::Normal);
-			y += header_height;
-		} else {
-			for (size_t i = 0; i < rows.size(); i++) {
-				if (y + row_height > r.bottom) break;
-				TextColour colour = rows[i].second == "—"
-					? TextColour::Grey
-					: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
-				DrawString(r.left, label_end, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Small);
-				DrawString(label_end, value_end, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Small);
-				bool active = IsControllerMappingControlActive(i);
-				std::string live = GetControllerMappingLiveText(i);
-				DrawString(value_end, r.right, y, live,
-						active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Small);
-				y += row_height;
-			}
+		/* The function descriptions are part of the window even before mapping, so the
+		 * rows are always drawn; unmapped steps simply show an em dash. */
+		for (size_t i = 0; i < rows.size(); i++) {
+			if (y + row_height > r.bottom) break;
+			TextColour colour = rows[i].second == "—"
+				? TextColour::Grey
+				: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
+			DrawString(r.left, label_end, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Small);
+			DrawString(label_end, value_end, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Small);
+			bool active = IsControllerMappingControlActive(i);
+			std::string live = GetControllerMappingLiveText(i);
+			DrawString(value_end, live_end, y, live,
+					active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Small);
+			DrawString(live_end, r.right, y, GetControllerMappingDescription(i),
+					rows[i].second == "—" ? TextColour::Grey : TextColour::Silver,
+					AlignmentH::Start, false, FontSize::Small);
+			y += row_height;
 		}
 
 		std::string status = GetControllerConfigStatus();

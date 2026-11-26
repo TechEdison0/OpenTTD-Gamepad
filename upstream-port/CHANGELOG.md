@@ -5,9 +5,9 @@ file records only what this fork adds.
 
 ## 2026-11-26 — C1 bugfix: calibrated axis rest positions
 
-- Mapping startup now polls every mappable axis for 750 ms at 20 ms intervals and stores
-  the **longest stable value** as that axis's resting position. A brief tap during
-  calibration cannot become the baseline.
+- Mapping startup samples incoming axis events for 750 ms and stores the **longest
+  stable value** as that axis's resting position. A brief tap during calibration cannot
+  become the baseline.
 - Axis detection and runtime activation now measure from the calibrated rest instead of
   assuming `0` for sticks and `-32768` for triggers. This fixes controllers such as the
   8BitDo Ultimate MG, whose axes rest near `-128` and were otherwise mapped immediately.

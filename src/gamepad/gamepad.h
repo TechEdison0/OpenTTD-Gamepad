@@ -73,9 +73,6 @@ bool GetGamepadButtonHeld(uint8_t index);
 /** Whether a raw button of the selected controller is currently held. */
 bool GetGamepadLiveButton(uint8_t index);
 
-/** Current raw value of a selected-controller axis, polled live from SDL. */
-int16_t GetGamepadAxisValue(uint8_t index);
-
 /** Current value of a raw axis of the selected controller (trigger axes rest at -32768). */
 int16_t GetGamepadLiveAxis(uint8_t index);
 

@@ -106,8 +106,6 @@ static constexpr uint32_t _mapping_axis_quiet_ms = 500;
 static constexpr int16_t _mapping_deadzone = 327;
 /** Rest-detection window at the start of mapping. */
 static constexpr uint32_t _mapping_calibration_ms = 750;
-/** How often rest positions are sampled during calibration. */
-static constexpr uint32_t _mapping_calibration_sample_ms = 20;
 static constexpr size_t MAX_CALIBRATION_AXES = 64;
 
 /** Values captured so far, indexed like #_mapping_steps. */
@@ -133,7 +131,32 @@ static std::array<AxisRestSample, MAX_CALIBRATION_AXES> _axis_rest_samples;
 static std::array<int16_t, MAX_CALIBRATION_AXES> _mapping_axis_rest = {};
 static bool _mapping_calibrating = false;
 static uint32_t _mapping_calibration_started = 0;
-static uint32_t _mapping_calibration_last_sample = 0;
+
+/**
+ * Feed one axis sample into startup calibration. Events are used rather than polling
+ * SDL directly, so the baseline comes from exactly the values mapping will see.
+ */
+static void SampleAxisRest(uint8_t axis, int value, uint32_t now)
+{
+	if (axis >= MAX_CALIBRATION_AXES) return;
+	AxisRestSample &sample = _axis_rest_samples[axis];
+	if (!sample.seen) {
+		sample.seen = true;
+		sample.candidate = value;
+		sample.candidate_since = now;
+		sample.best = value;
+		sample.best_duration = 0;
+	} else if (value != sample.candidate) {
+		/* A brief tap resets the current run but cannot erase a longer rest run. */
+		sample.candidate = value;
+		sample.candidate_since = now;
+	}
+	uint32_t duration = now - sample.candidate_since;
+	if (duration > sample.best_duration) {
+		sample.best_duration = duration;
+		sample.best = value;
+	}
+}
 
 /** Human-readable name of a hat direction bitfield. */
 static std::string DescribeHatDirection(uint8_t bits)
@@ -288,37 +311,9 @@ void TickControllerMapping()
 	if (!_mapping_active || !_mapping_calibrating) return;
 
 	uint32_t now = SDL_GetTicks();
-	if (static_cast<int32_t>(now - _mapping_calibration_last_sample) < static_cast<int32_t>(_mapping_calibration_sample_ms)) return;
-	_mapping_calibration_last_sample = now;
-
-	int selected = GetGamepadSelection();
-	if (selected < 0) {
+	if (GetGamepadSelection() < 0) {
 		_mapping_calibrating = false;
 		return;
-	}
-
-	size_t count = GetGamepadAxisCount(static_cast<size_t>(selected));
-	for (size_t i = 0; i < count; i++) {
-		uint8_t axis = GetGamepadAxis(static_cast<size_t>(selected), i);
-		if (axis >= MAX_CALIBRATION_AXES) continue;
-		AxisRestSample &sample = _axis_rest_samples[axis];
-		int value = GetGamepadAxisValue(axis);
-		if (!sample.seen) {
-			sample.seen = true;
-			sample.candidate = value;
-			sample.candidate_since = now;
-			sample.best = value;
-			sample.best_duration = 0;
-		} else if (value != sample.candidate) {
-			/* A brief tap resets the current run but cannot erase a longer rest run. */
-			sample.candidate = value;
-			sample.candidate_since = now;
-		}
-		uint32_t duration = now - sample.candidate_since;
-		if (duration > sample.best_duration) {
-			sample.best_duration = duration;
-			sample.best = value;
-		}
 	}
 
 	if (static_cast<int32_t>(now - _mapping_calibration_started) >= static_cast<int32_t>(_mapping_calibration_ms)) {
@@ -540,7 +535,6 @@ bool StartControllerMapping()
 	_mapping_axis_ignore_until = 0;
 	_mapping_calibrating = true;
 	_mapping_calibration_started = SDL_GetTicks();
-	_mapping_calibration_last_sample = 0;
 	ResetMappingStepState();
 	_controller_status = "mapping: detecting resting axis positions (hold controls still)";
 	InvalidateWindowData(WindowClass::Controller, 0);
@@ -558,7 +552,15 @@ void CancelControllerMapping()
 
 void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_t value)
 {
-	if (!_mapping_active || _mapping_calibrating || _mapping_step >= _mapping_steps.size()) return;
+	if (!_mapping_active || _mapping_step >= _mapping_steps.size()) return;
+
+	if (_mapping_calibrating) {
+		/* Baseline from the exact event stream the mapping flow consumes. */
+		if (type == ControllerInputEventType::AxisMotion && IsSelectedControllerAxis(index)) {
+			SampleAxisRest(index, static_cast<int>(value), SDL_GetTicks());
+		}
+		return;
+	}
 
 	const MappingStepDef &step = _mapping_steps[_mapping_step];
 	bool settled = SDL_GetTicks() - _mapping_step_started >= _mapping_settle_ms;

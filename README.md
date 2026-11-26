@@ -158,7 +158,7 @@ with the current value of every mapped input.
 
 The mapping flow has **18 steps**: buttons, D-pad directions, stick axes and triggers.
 Back/Select/Start/Guide are intentionally absent because Android devices claim them as
-system buttons; pause is reserved for a simultaneous L3+R3 press. Sticks and triggers
+system buttons; L3 pauses and R3 toggles fast forward. Sticks and triggers
 are captured with a ±22,000 detection threshold and always stored over the full SDL
 range (`-32768..32767`), so the direction of the test move cannot invert or truncate the
 mapping. Trigger axes read `-32768` until the first SDL event, so they are not active on

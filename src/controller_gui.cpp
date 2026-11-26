@@ -392,7 +392,7 @@ struct ControllerGuideWindow : Window {
 			"L/R Shoulder @R Ctrl/Shift Modifiers",
 			"@B L+A to share orders between vehicles",
 			"@B R+A to estimate build cost",
-			"L3+R3 @R Pause or resume the game",
+			"L3 @R Pause or resume the game",
 			"R3 @R Toggle fast forward",
 			"L Stick @R Crosshair",
 			"@B Moves the mouse",

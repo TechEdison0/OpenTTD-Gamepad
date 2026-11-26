@@ -35,7 +35,6 @@ enum GamepadActionStep : size_t {
 static InputSource _input_source = InputSource::KeyboardMouse;
 static bool _suppress_input_source_mark = false;
 static std::array<bool, 18> _action_held = {};
-static bool _pause_held = false;
 static bool _left_held = false;
 static bool _right_held = false;
 static bool _ctrl_from_gamepad = false;
@@ -132,11 +131,9 @@ void HandleGamepadActions()
 	/* LB/RB are held Ctrl/Shift modifiers, active from press until release. */
 	UpdateModifiers(active);
 
-	/* Pause is a chord, not either stick press alone. R3 alone toggles fast forward. */
-	bool pause = active[GAP_LSTICK] && active[GAP_RSTICK];
-	bool pause_edge = pause && !_pause_held;
-	bool fastforward_edge = edge[GAP_RSTICK] && !active[GAP_LSTICK];
-	_pause_held = pause;
+	/* L3 pauses on its own; R3 alone toggles fast forward. */
+	bool pause_edge = edge[GAP_LSTICK];
+	bool fastforward_edge = edge[GAP_RSTICK];
 	_action_held = active;
 
 	if (any_edge) _input_source = InputSource::Gamepad;

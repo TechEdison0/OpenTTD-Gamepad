@@ -67,6 +67,9 @@ int GetGamepadSelection();
  */
 void SetGamepadSelection(int index);
 
+/** Whether a raw button of the selected controller is currently held (event state plus a live SDL poll). */
+bool GetGamepadButtonHeld(uint8_t index);
+
 /** Whether a raw button of the selected controller is currently held. */
 bool GetGamepadLiveButton(uint8_t index);
 

@@ -395,6 +395,20 @@ void SetGamepadSelection(int index)
 	ClearGamepadLiveState();
 }
 
+bool GetGamepadButtonHeld(uint8_t index)
+{
+	/* The event watch can miss or reorder button transitions on some backends (notably
+	 * Android). Poll the selected joystick as well so held actions stay held. */
+	if (_gamepad_selection >= 0 && _gamepad_selection < static_cast<int>(_gamepad_slots.size())) {
+		SDL_Joystick *joystick = _gamepad_slots[_gamepad_selection].joystick;
+		if (joystick != nullptr && index < SDL_JoystickNumButtons(joystick) && SDL_JoystickGetButton(joystick, index) != 0) {
+			return true;
+		}
+	}
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
+	return index < _gamepad_live_buttons.size() && _gamepad_live_buttons[index];
+}
+
 bool GetGamepadLiveButton(uint8_t index)
 {
 	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);

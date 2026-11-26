@@ -14,9 +14,18 @@ file records only what this fork adds.
   clicks, wheel, cursor delta or held buttons, not from `HandleMouseEvents()` entry.
 - Focus-independent actions: A activates the widget under the cursor, X invokes its
   right-click handler, Y cancels the active tool without falsely marking keyboard input,
-  and L3+R3 pauses via `HandleToolbarHotkey(MTHK_PAUSE)`.
+  and L3 pauses via `HandleToolbarHotkey(MTHK_PAUSE)`.
 - Mutex protection for live button/axis/hat state shared between the SDL event thread and
   the input/game threads.
+
+### Fixes in manual pass
+
+- Held button state is polled from SDL on every action tick (`GetGamepadButtonHeld()`),
+  not only inferred from the event watch. This fixes buttons that appeared to release
+  early on Android and keeps A/X/LB/RB held for the full physical press.
+- Pause is L3 alone; R3 toggles fast forward. The old L3+R3 chord is removed.
+- Shoulders are held Ctrl/Shift alongside A/X/Y, so `L+A` share-orders and `R+A`
+  cost-estimate combos keep their modifier through the whole click and drag.
 
 ### Fixed
 
@@ -29,7 +38,7 @@ file records only what this fork adds.
 - A and X now go through the real mouse dispatch path (`HandleGamepadButton()` →
   `MouseLoop()`), so build placement, drag-build and context menus behave like real
   clicks. A bare `OnClick()` had bypassed viewport handling.
-- R3 alone toggles fast forward via `MTHK_FASTFORWARD`; L3+R3 still pauses. The Controller
+- R3 toggles fast forward via `MTHK_FASTFORWARD`; L3 pauses. The Controller
   guide and mapping descriptions now list R3.
 - Android freeze after several inputs: `GetGamepadLiveAxis()` no longer calls SDL bind
   queries while holding the live-state mutex. SDL queries can run the event watch, which
@@ -61,7 +70,7 @@ Cut from `main`; Linux, Windows and Android artifacts built from that revision,
 ### Fixed
 
 - Back/Select/Start/Guide are no longer prompted for; the flow is 18 steps. Pause is
-  reserved for L3+R3.
+  reserved for L3; R3 toggles fast forward.
 - Trigger axes rest at `-32768` until the first SDL event, removing the green active
   state on first launch and the need to double-click during mapping. Only axis-mapped
   triggers are affected.

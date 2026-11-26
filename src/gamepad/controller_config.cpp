@@ -82,8 +82,8 @@ static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descri
 	"Esc: cancel tool / abort build",
 	"Hold: Ctrl modifier",
 	"Hold: Shift modifier",
-	"L3: hold with R3 to pause",
-	"R3: fast forward toggle / hold with L3 to pause",
+	"L3: pause/resume",
+	"R3: fast forward toggle",
 	"Focus up (C3)",
 	"Focus down (C3)",
 	"Focus left (C3)",
@@ -379,7 +379,7 @@ bool IsControllerMappingControlActive(size_t step)
 	const MappingValue &value = _mapping_values[step];
 	switch (value.kind) {
 		case MappingKind::Button:
-			return GetGamepadLiveButton(value.index);
+			return GetGamepadButtonHeld(value.index);
 
 		case MappingKind::Axis: {
 			/* Sticks rest near zero, triggers at the bottom of their range, so they need

@@ -243,6 +243,11 @@ void VideoDriver_SDL_Base::ClaimMousePointer()
  */
 void VideoDriver_SDL_Base::EditBoxGainedFocus()
 {
+#ifdef __ANDROID__
+	/* On Android SDL_StartTextInput raises the native keyboard. Only a touch-originated
+	 * edit box should do that; controller activation must not steal the screen. */
+	if (GetInputSource() != InputSource::Touch) return;
+#endif
 	if (!this->edit_box_focused) {
 		SDL_StartTextInput();
 		this->edit_box_focused = true;

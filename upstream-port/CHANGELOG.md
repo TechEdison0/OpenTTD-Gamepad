@@ -43,6 +43,9 @@ file records only what this fork adds.
 ### Fixed
 - The OSK is now blocked at `ShowOnScreenKeyboard()` itself, not only at editbox click
   dispatch. Opening the rail/road widget with a controller no longer raises the OSK.
+- On Android, `SDL_StartTextInput()` is now called only for touch-originated edit boxes.
+  This prevents the native keyboard from opening when a controller focuses the picker
+  search field; touch taps still start text input and the in-game OSK.
 
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 

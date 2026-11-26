@@ -17,10 +17,17 @@
 enum class InputSource : uint8_t {
 	KeyboardMouse, ///< Keyboard or mouse is in control.
 	Gamepad,       ///< Controller is in control.
+	Touch,         ///< Touch input opened or activated the current control.
 };
 
 /** Mark real keyboard or mouse activity, yielding control from the gamepad. */
 void NotifyKeyboardMouseActivity();
+
+/** Mark touch activity, so touch-specific UI (the OSK) can be gated. */
+void NotifyTouchActivity();
+
+/** Consume the pending touch mark so touch-driven MouseLoop calls do not look like real mouse input. */
+bool ConsumeTouchActivityMark();
 
 /** Current input source. */
 InputSource GetInputSource();

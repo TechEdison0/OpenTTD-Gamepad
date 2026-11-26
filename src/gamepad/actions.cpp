@@ -47,6 +47,7 @@ static bool _ctrl_from_gamepad = false;
 static bool _shift_from_gamepad = false;
 static bool _gamepad_cursor_moved = false;
 static bool _gamepad_virtual_click = false;
+static bool _touch_activity_pending = false;
 
 bool IsGamepadVirtualClick()
 {
@@ -61,6 +62,20 @@ void SetGamepadVirtualClick(bool active)
 void NotifyKeyboardMouseActivity()
 {
 	if (!_suppress_input_source_mark) _input_source = InputSource::KeyboardMouse;
+}
+
+void NotifyTouchActivity()
+{
+	if (_suppress_input_source_mark) return;
+	_input_source = InputSource::Touch;
+	_touch_activity_pending = true;
+}
+
+bool ConsumeTouchActivityMark()
+{
+	bool pending = _touch_activity_pending;
+	_touch_activity_pending = false;
+	return pending;
 }
 
 InputSource GetInputSource()

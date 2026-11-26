@@ -3131,9 +3131,10 @@ void HandleMouseEvents()
 
 	/* HandleMouseEvents() runs every tick; only real activity yields control from a pad. */
 	bool gamepad_cursor_moved = ConsumeGamepadCursorMovement();
+	bool touch_activity = ConsumeTouchActivityMark();
 	if (click != MouseClick::None || mousewheel != 0 ||
 			((_cursor.delta.x != 0 || _cursor.delta.y != 0) && !gamepad_cursor_moved)) {
-		NotifyKeyboardMouseActivity();
+		if (!touch_activity) NotifyKeyboardMouseActivity();
 	}
 
 	static std::chrono::steady_clock::time_point hover_time = {};

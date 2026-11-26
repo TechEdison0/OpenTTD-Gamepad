@@ -31,6 +31,15 @@ file records only what this fork adds.
   as `logical:N:min:max:rest`. Older four-field raw values still parse; their rest is
   inferred from the step type.
 
+## 2026-11-26 — C3 focus model: touch-gated OSK
+
+### Added
+- Track touch as its own input source. QueryString edit boxes only raise the on-screen
+  keyboard when touch opened or activated the control; controller, keyboard and mouse
+  activation no longer triggers it.
+- Touch-driven `MouseLoop()` calls are tagged so touch cursor movement is not mistaken for
+  real mouse activity and yielded back to gamepad input.
+
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 
 ### Added

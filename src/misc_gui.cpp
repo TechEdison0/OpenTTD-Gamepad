@@ -23,6 +23,7 @@
 #include "texteff.hpp"
 #include "strings_func.h"
 #include "window_func.h"
+#include "gamepad/actions.h"
 #include "querystring_gui.h"
 #include "textbuf_gui.h"
 #include "core/geometry_func.hpp"
@@ -887,6 +888,7 @@ void QueryString::ClickEditBox(Window *w, Point pt, WidgetID wid, int click_coun
 	}
 
 	if (w->window_class != WindowClass::OnScreenKeyboard && _settings_client.gui.osk_activation != OskActivation::Disabled &&
+		GetInputSource() == InputSource::Touch &&
 		(!focus_changed || _settings_client.gui.osk_activation == OskActivation::Immediately) &&
 		(click_count == 2 || _settings_client.gui.osk_activation != OskActivation::DoubleClick)) {
 		/* Open the OSK window */

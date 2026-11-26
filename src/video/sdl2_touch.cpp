@@ -9,6 +9,7 @@
 
 #include "../stdafx.h"
 #include "../gfx_func.h"
+#include "../gamepad/actions.h"
 #include "../window_func.h"
 #include "../core/math_func.hpp"
 #include "sdl2_touch.h"
@@ -280,6 +281,7 @@ bool TouchTrackpad::HandleEvent(const SDL_Event &ev)
 		case SDL_FINGERUP: this->OnFingerUp(ev.tfinger); break;
 		default: return false;
 	}
+	NotifyTouchActivity();
 
 	_cursor.in_window = true;
 	return true;
@@ -290,6 +292,7 @@ void TouchTrackpad::Tick()
 {
 	if (this->tap_pending && Clock::now() - this->tap_time >= TAP_DRAG_WINDOW) {
 		this->tap_pending = false;
+		NotifyTouchActivity();
 		this->LeftClick();
 	}
 

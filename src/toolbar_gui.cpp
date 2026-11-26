@@ -12,6 +12,7 @@
 #include "gui.h"
 #include "spritecache.h"
 #include "window_gui.h"
+#include "controller_gui.h"
 #include "window_func.h"
 #include "viewport_func.h"
 #include "command_func.h"
@@ -269,6 +270,7 @@ enum class OptionMenuEntries : uint8_t {
 	TransparentBuildings, ///< Toggle buildings transparency.
 	TransparentStationSigns, ///< Toggle transparency of signs and names.
 	AndroidAppSettings, ///< Open the settings of the Android app.
+	ControllerSettings, ///< Open the controller main menu (launcher).
 };
 
 /**
@@ -293,6 +295,7 @@ static CallBackFunction ToolbarOptionsClick(Window *w)
 		list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_SANDBOX_OPTIONS, OptionMenuEntries::SandboxOptions));
 	}
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS, OptionMenuEntries::Transparencies));
+	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_CONTROLLER, OptionMenuEntries::ControllerSettings));
 #ifdef __ANDROID__
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_ANDROID_APP_SETTINGS, OptionMenuEntries::AndroidAppSettings));
 #endif
@@ -332,6 +335,7 @@ static CallBackFunction MenuClickSettings(int index)
 		case OptionMenuEntries::NewGRFSettings: ShowNewGRFSettings(!_networking && _settings_client.gui.UserIsAllowedToChangeNewGRFs(), true, true, _grfconfig); return CallBackFunction::None;
 		case OptionMenuEntries::SandboxOptions: ShowCheatWindow(); break;
 		case OptionMenuEntries::Transparencies: ShowTransparencyToolbar(); break;
+		case OptionMenuEntries::ControllerSettings: ShowControllerWindow(); return CallBackFunction::None;
 #ifdef __ANDROID__
 		case OptionMenuEntries::AndroidAppSettings: ShowAndroidAppSettings(); return CallBackFunction::None;
 #endif

@@ -20,6 +20,8 @@ file records only what this fork adds.
 
 ### Fixes in manual pass
 
+- In-game options cog now has a **Controller** entry that opens the C1 controller launcher
+  (Controller Guide / Controllers & Mapping) without leaving the game.
 - LB/RB modifiers are now ORed into the video driver's `_ctrl_pressed`/`_shift_pressed`
   before its transition check. The driver previously reset Ctrl from the keyboard every
   tick while C2 forced it true, causing bulldoze to toggle every frame and leaving Ctrl

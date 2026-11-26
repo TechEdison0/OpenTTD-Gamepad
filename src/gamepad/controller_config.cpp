@@ -137,6 +137,8 @@ static std::array<AxisRangeSample, MAX_CALIBRATION_AXES> _axis_range_samples;
 static std::array<int16_t, MAX_CALIBRATION_AXES> _axis_rest = {};
 static std::array<int16_t, MAX_CALIBRATION_AXES> _axis_max = {};
 static std::array<bool, MAX_CALIBRATION_AXES> _axis_calibrated = {};
+/** An axis can only be captured after an observed value near its learned rest. */
+static std::array<bool, MAX_CALIBRATION_AXES> _axis_armed = {};
 
 /** Feed one axis event into the A-prompt calibration gesture. */
 static void SampleAxisRange(uint8_t axis, int value)
@@ -518,6 +520,7 @@ bool StartControllerMapping()
 	_mapping_values.fill(MappingValue{});
 	_axis_range_samples.fill(AxisRangeSample{});
 	_axis_calibrated.fill(false);
+	_axis_armed.fill(false);
 	_mapping_step = 0;
 	_mapping_active = true;
 	_mapping_phase = MappingPhase::AOnly;
@@ -575,6 +578,8 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 		for (size_t i = 0; i < MAX_CALIBRATION_AXES; i++) {
 			const AxisRangeSample &sample = _axis_range_samples[i];
 			if (!sample.seen) continue;
+			int range = static_cast<int>(sample.max) - static_cast<int>(sample.min);
+			if (range < _mapping_axis_threshold) continue;
 			_axis_rest[i] = sample.min;
 			_axis_max[i] = sample.max;
 			_axis_calibrated[i] = true;
@@ -620,7 +625,14 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 			if (now < _mapping_axis_ignore_until) break;
 			if (!settled) break;
 			int rest = static_cast<int>(_axis_rest[index]);
-			if (std::abs(static_cast<int>(value) - rest) <= _mapping_axis_threshold) break;
+			int delta = std::abs(static_cast<int>(value) - rest);
+			if (delta <= _mapping_deadzone) {
+				/* Observed at rest: arm this axis for the next deliberate movement. */
+				_axis_armed[index] = true;
+				break;
+			}
+			if (!_axis_armed[index] || delta <= _mapping_axis_threshold) break;
+			_axis_armed[index] = false;
 			RecordAxisAndAdvance(index);
 			AdvanceMappingStep();
 			break;

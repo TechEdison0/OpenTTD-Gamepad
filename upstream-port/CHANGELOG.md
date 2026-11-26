@@ -18,6 +18,9 @@ file records only what this fork adds.
   the flow.
 - A short axis ignore window is applied after calibration confirms to discard axis events
   still in flight from the gesture.
+- Axis capture is now edge-triggered: an axis must first report a value near its learned
+  rest, then move beyond the detection threshold, before it can satisfy a prompt. Axes
+  whose calibration gesture did not show a meaningful range are skipped.
 - `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
   four-field values still parse; their rest is inferred from the step type.
 

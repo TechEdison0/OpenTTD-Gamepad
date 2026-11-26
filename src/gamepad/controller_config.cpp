@@ -128,9 +128,13 @@ static uint32_t _mapping_axis_ignore_until = 0;
 
 /** Min/max observed while the user performs the calibration gesture. */
 struct AxisRangeSample {
-	int16_t min = 32767;  ///< Lowest value observed (resting value).
-	int16_t max = -32768; ///< Highest value observed (full deflection).
-	bool seen = false;    ///< Whether any sample was taken.
+	int16_t min = 32767;     ///< Lowest value observed during the gesture.
+	int16_t max = -32768;    ///< Highest value observed during the gesture.
+	int candidate = 0;       ///< Current run of identical values.
+	uint32_t candidate_since = 0; ///< Start of the current run.
+	int best = 0;            ///< Longest stable value observed.
+	uint32_t best_duration = 0; ///< Duration of the longest stable run.
+	bool seen = false;       ///< Whether any sample was taken.
 };
 
 static std::array<AxisRangeSample, MAX_CALIBRATION_AXES> _axis_range_samples;
@@ -141,7 +145,7 @@ static std::array<bool, MAX_CALIBRATION_AXES> _axis_calibrated = {};
 static std::array<bool, MAX_CALIBRATION_AXES> _axis_armed = {};
 
 /** Feed one axis event into the A-prompt calibration gesture. */
-static void SampleAxisRange(uint8_t axis, int value)
+static void SampleAxisRange(uint8_t axis, int value, uint32_t now)
 {
 	if (axis >= MAX_CALIBRATION_AXES) return;
 	AxisRangeSample &sample = _axis_range_samples[axis];
@@ -150,10 +154,23 @@ static void SampleAxisRange(uint8_t axis, int value)
 		sample.seen = true;
 		sample.min = sample_value;
 		sample.max = sample_value;
+		sample.candidate = value;
+		sample.candidate_since = now;
+		sample.best = value;
+		sample.best_duration = 0;
 		return;
 	}
 	sample.min = std::min(sample.min, sample_value);
 	sample.max = std::max(sample.max, sample_value);
+	if (value != sample.candidate) {
+		sample.candidate = value;
+		sample.candidate_since = now;
+	}
+	uint32_t duration = now - sample.candidate_since;
+	if (duration > sample.best_duration) {
+		sample.best_duration = duration;
+		sample.best = value;
+	}
 }
 
 /** Human-readable name of a hat direction bitfield. */
@@ -569,7 +586,7 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 	if (_mapping_phase == MappingPhase::Calibration) {
 		if (type == ControllerInputEventType::AxisMotion && IsSelectedControllerAxis(index) &&
 				(IsGamepadStickAxis(index) || IsGamepadTriggerAxis(index))) {
-			SampleAxisRange(index, static_cast<int>(value));
+			SampleAxisRange(index, static_cast<int>(value), SDL_GetTicks());
 		}
 		bool a_released = type == ControllerInputEventType::ButtonUp &&
 				_mapping_values[0].kind == MappingKind::Button && index == _mapping_values[0].index;
@@ -580,7 +597,10 @@ void ControllerMappingEvent(ControllerInputEventType type, uint8_t index, int16_
 			if (!sample.seen) continue;
 			int range = static_cast<int>(sample.max) - static_cast<int>(sample.min);
 			if (range < _mapping_axis_threshold) continue;
-			_axis_rest[i] = sample.min;
+			/* Rest is the longest stable value during the gesture. Some pads rest
+			 * near -128 while their full travel reaches -32767; a brief press must
+			 * not replace that resting baseline. */
+			_axis_rest[i] = static_cast<int16_t>(std::clamp(sample.best, -32768, 32767));
 			_axis_max[i] = sample.max;
 			_axis_calibrated[i] = true;
 		}

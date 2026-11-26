@@ -8,9 +8,10 @@ file records only what this fork adds.
 - Mapping now starts with only the **Press A** step visible. After A is mapped, a prompt
   asks the user to move both sticks in a circle, press and release LT/RT, release them,
   then press A again. Only after that second A press do the remaining mapping steps appear.
-- The gesture records each stick/trigger axis's observed **minimum (resting)** and
-  **maximum** values from raw axis events. Axis detection and runtime activation use the
-  learned rest instead of assuming `0` for sticks and `-32768` for triggers.
+- The gesture records each stick/trigger axis's observed range and uses its **longest
+  stable value** as rest, not the most negative sample. A pad that rests near `-128` while
+  travelling to `-32767` therefore stores `-128` as rest, and a brief press cannot replace
+  that baseline.
 - Removed the automatic startup rest-sampling routine; controllers that rest away from the
   assumed values, such as the 8BitDo Ultimate MG at `-128`, no longer auto-map every axis.
 - Gamepad-generated A clicks no longer activate the **Map Controller / Cancel** widget

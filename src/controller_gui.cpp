@@ -25,9 +25,38 @@
 #include "strings_func.h"
 #include "table/strings.h"
 
+#include <cmath>
 #include <string>
 
 #include "safeguards.h"
+
+/** Widgets of the controller launcher window. */
+enum ControllerLaunchWidgets {
+	WID_CL_CAPTION,  ///< Window caption.
+	WID_CL_GUIDE,    ///< Open the controller function guide.
+	WID_CL_MAPPING,  ///< Open controller selection and mapping.
+};
+
+static constexpr std::initializer_list<NWidgetPart> _controller_launch_widgets = {
+	NWidget(NWID_HORIZONTAL),
+		NWidget(WWT_CLOSEBOX, Colours::Grey),
+		NWidget(WWT_CAPTION, Colours::Grey, WID_CL_CAPTION), SetStringTip(STR_CONTROLLER_LAUNCH_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_STICKYBOX, Colours::Grey),
+	EndContainer(),
+	NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
+		NWidget(NWID_HORIZONTAL), SetPIP(0, 8, 0),
+			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_GUIDE), SetMinimalSize(170, 20), SetStringTip(STR_CONTROLLER_GUIDE_BUTTON, STR_NULL),
+			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_MAPPING), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_MAPPING_BUTTON, STR_NULL),
+		EndContainer(),
+	EndContainer(),
+};
+
+static WindowDesc _controller_launch_desc(
+	WindowPosition::Automatic, "controller_launch", 0, 0,
+	WindowClass::Controller, WindowClass::None,
+	{},
+	_controller_launch_widgets
+);
 
 /** Widgets of the controller window. */
 enum ControllerWidgets {
@@ -167,9 +196,9 @@ public:
 		GfxFillRect(r, PC_BLACK);
 
 		/* Four columns sized as fractions of the widget: fixed offsets clip text on
-		 * high-DPI screens. Dense rows use small text; headers and status stay normal. */
+		 * high-DPI screens. Labels and text are kept short so Normal font fits. */
 		const int header_height = GetCharacterHeight(FontSize::Normal);
-		const int row_height = GetCharacterHeight(FontSize::Small);
+		const int row_height = GetCharacterHeight(FontSize::Normal);
 		const int list_width = r.right - r.left;
 		const int label_end = r.left + list_width * 26 / 100;
 		const int value_end = r.left + list_width * 50 / 100;
@@ -201,15 +230,15 @@ public:
 			TextColour colour = rows[i].second == "—"
 				? TextColour::Grey
 				: (IsControllerMapping() && i == current ? TextColour::Yellow : TextColour::White);
-			DrawString(r.left, label_end, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Small);
-			DrawString(label_end, value_end, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Small);
+			DrawString(r.left, label_end, y, rows[i].first, colour, AlignmentH::Start, false, FontSize::Normal);
+			DrawString(label_end, value_end, y, rows[i].second, colour, AlignmentH::Start, false, FontSize::Normal);
 			bool active = IsControllerMappingControlActive(i);
 			std::string live = GetControllerMappingLiveText(i);
 			DrawString(value_end, live_end, y, live,
-					active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Small);
+					active ? TextColour::Green : TextColour::Grey, AlignmentH::Start, false, FontSize::Normal);
 			DrawString(live_end, r.right, y, GetControllerMappingDescription(i),
 					rows[i].second == "—" ? TextColour::Grey : TextColour::Silver,
-					AlignmentH::Start, false, FontSize::Small);
+					AlignmentH::Start, false, FontSize::Normal);
 			y += row_height;
 		}
 
@@ -221,8 +250,148 @@ public:
 	}
 };
 
-void ShowControllerWindow()
+/** Draw a small filled circle with a handful of horizontal spans. */
+static void DrawFilledCircle(int cx, int cy, int radius, PixelColour colour)
+{
+	for (int dy = -radius; dy <= radius; dy++) {
+		int half = static_cast<int>(std::sqrt(static_cast<double>(radius * radius - dy * dy)));
+		GfxFillRect(Rect{cx - half, cy + dy, cx + half, cy + dy}, colour);
+	}
+}
+
+/** Widgets of the controller guide window. */
+enum ControllerGuideWidgets {
+	WID_CG_CAPTION, ///< Window caption.
+	WID_CG_CANVAS,  ///< Schematic controller and its function descriptions.
+};
+
+static constexpr std::initializer_list<NWidgetPart> _controller_guide_widgets = {
+	NWidget(NWID_HORIZONTAL),
+		NWidget(WWT_CLOSEBOX, Colours::Grey),
+		NWidget(WWT_CAPTION, Colours::Grey, WID_CG_CAPTION), SetStringTip(STR_CONTROLLER_GUIDE_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_STICKYBOX, Colours::Grey),
+	EndContainer(),
+	NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
+		NWidget(WWT_EMPTY, Colours::Invalid, WID_CG_CANVAS), SetMinimalSize(640, 360), SetFill(1, 1),
+	EndContainer(),
+};
+
+static WindowDesc _controller_guide_desc(
+	WindowPosition::Automatic, "controller_guide", 0, 0,
+	WindowClass::ControllerGuide, WindowClass::None,
+	{},
+	_controller_guide_widgets
+);
+
+/** Launcher: choose the function guide or the mapping window. */
+void ShowControllerGuideWindow();
+void ShowControllerMappingWindow();
+
+struct ControllerLaunchWindow : Window {
+	ControllerLaunchWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
+	{
+		this->InitNested(number);
+	}
+
+	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
+	{
+		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING) {
+			this->Close();
+			if (widget == WID_CL_GUIDE) ShowControllerGuideWindow(); else ShowControllerMappingWindow();
+		}
+	}
+};
+
+/**
+ * Hardcoded controller function guide. The schematic is drawn with primitives from the
+ * CC0 Xbox controller reference (Wikimedia Commons, File:Xbox_Controller.svg): offset
+ * sticks, D-pad left, face buttons right, shoulders on top. One connector line per row.
+ */
+struct ControllerGuideWindow : Window {
+	ControllerGuideWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
+	{
+		this->InitNested(number);
+	}
+
+	void DrawWidget(const Rect &r, WidgetID widget) const override
+	{
+		if (widget != WID_CG_CANVAS) return;
+		GfxFillRect(r, PC_BLACK);
+
+		static constexpr const char * const _lines[] = {
+			"A - Left click / hold-drag",
+			"B - Close focused widget (C3)",
+			"X - Right click",
+			"Y - Esc: cancel tool",
+			"L/R Shoulder - Ctrl / Shift",
+			"L3+R3 - Pause / resume",
+			"L Stick - crosshair (C2)",
+			"R Stick - pan (C2 placeholder)",
+			"L/R Trigger - zoom (C2)",
+		};
+		struct GuideLink { int x; int y; int row; };
+		static constexpr GuideLink _links[] = {
+			{205, 130, 0}, {240, 105, 1}, {170, 105, 2}, {205, 80, 3}, {115, 20, 4},
+			{190, 165, 5}, {110, 115, 6}, {190, 165, 7}, {135, 10, 8},
+		};
+
+		const int bx = r.left + 20;
+		const int by = r.top + 45;
+		const int row_height = GetCharacterHeight(FontSize::Normal) + 8;
+		const int text_x = r.left + 335;
+
+		/* Controller silhouette: body, grips, shoulders. */
+		GfxFillRect(Rect{bx + 30, by + 35, bx + 270, by + 195}, PC_GREY);
+		GfxFillRect(Rect{bx, by + 70, bx + 70, by + 195}, PC_GREY);
+		GfxFillRect(Rect{bx + 230, by + 70, bx + 300, by + 195}, PC_GREY);
+		GfxFillRect(Rect{bx + 55, by + 10, bx + 115, by + 32}, PC_DARK_GREY);
+		GfxFillRect(Rect{bx + 175, by + 10, bx + 235, by + 32}, PC_DARK_GREY);
+
+		/* D-pad cross and the two offset sticks. */
+		GfxFillRect(Rect{bx + 55, by + 100, bx + 75, by + 140}, PC_DARK_GREY);
+		GfxFillRect(Rect{bx + 40, by + 115, bx + 90, by + 125}, PC_DARK_GREY);
+		DrawFilledCircle(bx + 110, by + 115, 22, PC_DARK_GREY);
+		DrawFilledCircle(bx + 190, by + 165, 22, PC_DARK_GREY);
+
+		/* Face buttons: Y top, X left, B right, A bottom. */
+		DrawFilledCircle(bx + 205, by + 80, 11, PC_YELLOW);
+		DrawFilledCircle(bx + 170, by + 105, 11, PC_LIGHT_BLUE);
+		DrawFilledCircle(bx + 240, by + 105, 11, PC_RED);
+		DrawFilledCircle(bx + 205, by + 130, 11, PC_GREEN);
+		DrawString(bx + 201, bx + 212, by + 74, "Y", TextColour::Black, AlignmentH::Start, false, FontSize::Normal);
+		DrawString(bx + 166, bx + 177, by + 99, "X", TextColour::Black, AlignmentH::Start, false, FontSize::Normal);
+		DrawString(bx + 236, bx + 247, by + 99, "B", TextColour::Black, AlignmentH::Start, false, FontSize::Normal);
+		DrawString(bx + 201, bx + 212, by + 124, "A", TextColour::Black, AlignmentH::Start, false, FontSize::Normal);
+
+		for (size_t i = 0; i < std::size(_links); i++) {
+			const GuideLink &link = _links[i];
+			GfxDrawLine(bx + link.x, by + link.y, text_x - 6, r.top + 20 + link.row * row_height + row_height / 2, PC_WHITE);
+			DrawString(text_x, r.right, r.top + 20 + link.row * row_height, _lines[link.row],
+					TextColour::White, AlignmentH::Start, false, FontSize::Normal);
+		}
+	}
+};
+
+void ShowControllerLaunchWindow()
+{
+	CloseWindowByClass(WindowClass::Controller);
+	CloseWindowByClass(WindowClass::ControllerGuide);
+	new ControllerLaunchWindow(_controller_launch_desc, 0);
+}
+
+void ShowControllerMappingWindow()
 {
 	CloseWindowByClass(WindowClass::Controller);
 	new ControllerWindow(_controller_desc, 0);
+}
+
+void ShowControllerGuideWindow()
+{
+	CloseWindowByClass(WindowClass::ControllerGuide);
+	new ControllerGuideWindow(_controller_guide_desc, 0);
+}
+
+void ShowControllerWindow()
+{
+	ShowControllerLaunchWindow();
 }

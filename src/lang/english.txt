@@ -6084,3 +6084,7 @@ STR_CONTROLLER_CANCEL                                           :{BLACK}Cancel
 STR_CONTROLLER_SELECT                                            :{BLACK}Select
 STR_CONTROLLER_LOAD                                             :{BLACK}Load
 STR_CONTROLLER_SAVE                                             :{BLACK}Save
+STR_CONTROLLER_LAUNCH_CAPTION                                   :{BLACK}Controller
+STR_CONTROLLER_GUIDE_BUTTON                                     :{BLACK}Controller Guide
+STR_CONTROLLER_MAPPING_BUTTON                                   :{BLACK}Controllers & Mapping
+STR_CONTROLLER_GUIDE_CAPTION                                    :{BLACK}Controller Guide

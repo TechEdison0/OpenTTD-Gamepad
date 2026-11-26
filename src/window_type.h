@@ -753,6 +753,11 @@ enum class WindowClass : uint16_t {
 	 */
 	Controller,
 
+	/**
+	 * Controller guide window (hardcoded in-game functions), added by the gamepad work.
+	 */
+	ControllerGuide,
+
 	Invalid = 0xFFFF, ///< Invalid window.
 };
 

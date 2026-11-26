@@ -19,6 +19,7 @@
 #include "vehicle_base.h"
 #include "depot_func.h"
 #include "window_func.h"
+#include "gamepad/actions.h"
 #include "tilehighlight_func.h"
 #include "network/network.h"
 #include "querystring_gui.h"
@@ -2792,6 +2793,8 @@ void HandleKeypress(uint keycode, char32_t key)
 	 */
 	if (key == 0 && keycode == 0) return;
 
+	NotifyKeyboardMouseActivity();
+
 	/* Check if the focused window has a focused editbox */
 	if (EditBoxInGlobalFocus()) {
 		/* All input will in this case go to the focused editbox */
@@ -2867,6 +2870,8 @@ void HandleCtrlChanged()
 void HandleTextInput(std::string_view str, bool marked, std::optional<size_t> caret, std::optional<size_t> insert_location, std::optional<size_t> replacement_end)
 {
 	if (!EditBoxInGlobalFocus()) return;
+
+	NotifyKeyboardMouseActivity();
 
 	_focused_window->InsertTextString(_focused_window->window_class == WindowClass::Console ? 0 : _focused_window->nested_focus->GetIndex(), str, marked, caret, insert_location, replacement_end);
 }
@@ -3124,6 +3129,12 @@ void HandleMouseEvents()
 		_cursor.wheel = 0;
 	}
 
+	/* HandleMouseEvents() runs every tick; only real activity yields control from a pad. */
+	if (click != MouseClick::None || mousewheel != 0 || _cursor.delta.x != 0 || _cursor.delta.y != 0 ||
+			_left_button_down || _right_button_down) {
+		NotifyKeyboardMouseActivity();
+	}
+
 	static std::chrono::steady_clock::time_point hover_time = {};
 	static Point hover_pos = {0, 0};
 
@@ -3201,6 +3212,7 @@ void InputLoop()
 
 	/* HandleMouseEvents was already called for this tick */
 	HandleMouseEvents();
+	HandleGamepadActions();
 }
 
 static std::chrono::time_point<std::chrono::steady_clock> _realtime_tick_start;

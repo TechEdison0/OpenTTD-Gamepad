@@ -3,6 +3,26 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-26 — C2 action layer (in progress, not released)
+
+### Added
+
+- Normalized gamepad actions with press-edge detection in new `src/gamepad/actions.*`,
+  dispatched from `InputLoop()` on the input thread. No synthetic SDL events.
+- Input-source tracking: real keyboard/text/mouse activity immediately yields from the
+  gamepad; a pad action edge takes control back. Mouse activity is detected from actual
+  clicks, wheel, cursor delta or held buttons, not from `HandleMouseEvents()` entry.
+- Focus-independent actions: A activates the widget under the cursor, X invokes its
+  right-click handler, Y cancels the active tool without falsely marking keyboard input,
+  and L3+R3 pauses via `HandleToolbarHotkey(MTHK_PAUSE)`.
+- Mutex protection for live button/axis/hat state shared between the SDL event thread and
+  the input/game threads.
+
+### Placeholders
+
+- B close, D-pad focus movement, stick crosshair/pan and trigger zoom remain documented
+  placeholders for C3/C5. Settings and rebinding remain deferred to C7.
+
 ## 2026-11-26 — `v20261126-c1-controller-implementation` (C1 complete)
 
 Cut from `main`; Linux, Windows and Android artifacts built from that revision,

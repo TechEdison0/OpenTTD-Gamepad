@@ -70,10 +70,13 @@ static std::array<bool, 128> _gamepad_live_buttons = {};
 static std::array<int16_t, 64> _gamepad_live_axes = {};
 static std::array<bool, 64> _gamepad_live_axis_seen = {};
 static std::array<uint8_t, 16> _gamepad_live_hats = {};
+/** Guards the live arrays: SDL events write on the event thread, windows read on the game thread. */
+static std::mutex _gamepad_live_mutex;
 
 /** Forget the previous controller's control state. */
 static void ClearGamepadLiveState()
 {
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	_gamepad_live_buttons.fill(false);
 	_gamepad_live_axes.fill(0);
 	_gamepad_live_axis_seen.fill(false);
@@ -283,6 +286,7 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 		case SDL_JOYBUTTONDOWN:
 		case SDL_JOYBUTTONUP:
 			if (IsSelectedGamepad(event->jbutton.which) && event->jbutton.button < _gamepad_live_buttons.size()) {
+				std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 				_gamepad_live_buttons[event->jbutton.button] = event->type == SDL_JOYBUTTONDOWN;
 			}
 			break;
@@ -291,6 +295,7 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 			const GamepadSlot *slot = FindSlot(event->jaxis.which);
 			if (slot == nullptr || std::ranges::find(slot->usable_axes, event->jaxis.axis) == std::end(slot->usable_axes)) break;
 			if (IsSelectedGamepad(event->jaxis.which) && event->jaxis.axis < _gamepad_live_axes.size()) {
+				std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 				_gamepad_live_axes[event->jaxis.axis] = event->jaxis.value;
 				_gamepad_live_axis_seen[event->jaxis.axis] = true;
 			}
@@ -299,6 +304,7 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 
 		case SDL_JOYHATMOTION:
 			if (IsSelectedGamepad(event->jhat.which) && event->jhat.hat < _gamepad_live_hats.size()) {
+				std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 				_gamepad_live_hats[event->jhat.hat] = event->jhat.value;
 			}
 			break;
@@ -391,11 +397,13 @@ void SetGamepadSelection(int index)
 
 bool GetGamepadLiveButton(uint8_t index)
 {
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	return index < _gamepad_live_buttons.size() && _gamepad_live_buttons[index];
 }
 
 int16_t GetGamepadLiveAxis(uint8_t index)
 {
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	if (index >= _gamepad_live_axes.size()) return 0;
 	/* Trigger axes rest at the bottom of their range, not at zero. Until SDL reports
 	 * the first event they must still read as resting, otherwise a freshly loaded
@@ -418,6 +426,7 @@ bool IsGamepadTriggerAxis(uint8_t index)
 
 uint8_t GetGamepadLiveHat(uint8_t index)
 {
+	std::lock_guard<std::mutex> lock(_gamepad_live_mutex);
 	return index < _gamepad_live_hats.size() ? _gamepad_live_hats[index] : static_cast<uint8_t>(SDL_HAT_CENTERED);
 }
 

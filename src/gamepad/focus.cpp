@@ -129,23 +129,19 @@ static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 	return candidates;
 }
 
-/** Collect candidates from every window in z-order, front first. */
-static std::vector<FocusCandidate> CollectCandidates()
-{
-	std::vector<FocusCandidate> candidates;
-	for (Window *w : Window::IterateFromFront()) {
-		auto window_candidates = CollectWindowCandidates(w);
-		candidates.insert(candidates.end(), window_candidates.begin(), window_candidates.end());
-	}
-	return candidates;
-}
-
 static Window *FrontWindowWithCandidates()
 {
 	for (Window *w : Window::IterateFromFront()) {
 		if (!CollectWindowCandidates(w).empty()) return w;
 	}
 	return nullptr;
+}
+
+/** Focus navigation is confined to the active window until B closes it. */
+static Window *GetActiveFocusWindow()
+{
+	if (FocusWindowAlive(_gamepad_focus_window)) return _gamepad_focus_window;
+	return FrontWindowWithCandidates();
 }
 
 static const FocusCandidate *FirstCandidate(const std::vector<FocusCandidate> &candidates)
@@ -247,7 +243,10 @@ static void SetFocus(const FocusCandidate &candidate)
 
 void MoveGamepadFocus(GamepadFocusDirection direction)
 {
-	std::vector<FocusCandidate> candidates = CollectCandidates();
+	Window *active = GetActiveFocusWindow();
+	if (active == nullptr) return;
+
+	std::vector<FocusCandidate> candidates = CollectWindowCandidates(active);
 	if (candidates.empty()) return;
 
 	Rect current{};
@@ -259,7 +258,7 @@ void MoveGamepadFocus(GamepadFocusDirection direction)
 	const FocusCandidate *best = nullptr;
 	int best_score = INT32_MAX;
 	for (const FocusCandidate &candidate : candidates) {
-		if (have_current && candidate.w == _gamepad_focus_window && candidate.widget == _gamepad_focus_widget) continue;
+		if (have_current && candidate.widget == _gamepad_focus_widget) continue;
 		int score = have_current ? DirectionScore(current, candidate, direction) : INT32_MAX;
 		if (score < best_score) {
 			best_score = score;

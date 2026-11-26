@@ -42,8 +42,9 @@ file records only what this fork adds.
   focused widget, and transfers focus to a newly opened window after activation.
 - Dropdown menu rows are now individual focus candidates; the red ring highlights one row
   instead of the whole list, and A selects that row.
-- Candidates now span all visible windows in screen coordinates, so D-pad can move from the
-  bottom status widgets up to the toolbar instead of being trapped in one window.
+- D-pad focus is confined to the active window until B closes it, so modal/new-game windows
+  and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
+- Focus still transfers to a newly opened window after A activation.
 - Left-stick movement leaves focus mode and restores A as a held left click. Keyboard,
   mouse and touch activity also clear the focus ring.
 - Track touch as its own input source. QueryString edit boxes only raise the on-screen

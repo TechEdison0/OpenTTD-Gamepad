@@ -192,8 +192,6 @@ void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
 
-	TickGamepadFocusTransfer();
-
 	std::array<bool, 18> active = {};
 	for (size_t i = 0; i < active.size(); i++) {
 		active[i] = IsControllerMappingControlActive(i);
@@ -246,7 +244,6 @@ void HandleGamepadActions()
 		if (IsGamepadFocusActive()) {
 			ActivateGamepadFocus();
 			UpdateGamepadFocusAfterActivation();
-			RequestGamepadFocusTransfer();
 		} else {
 			HandleGamepadButton(false, true);
 			_left_held = true;

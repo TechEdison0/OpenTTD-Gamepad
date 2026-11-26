@@ -14,7 +14,6 @@
 #include "focus.h"
 #include "actions.h"
 #include "../dropdown_func.h"
-#include "../openttd.h"
 #include "../window_gui.h"
 #include "../widget_type.h"
 #include "../gfx_func.h"
@@ -25,7 +24,6 @@
 
 static Window *_gamepad_focus_window = nullptr;
 static WidgetID _gamepad_focus_widget = -1;
-static int _focus_transfer_ticks = 0;
 
 /** Candidate used by one D-pad movement. Rectangles are in screen coordinates. */
 struct FocusCandidate {
@@ -102,7 +100,6 @@ void ClearGamepadFocus()
 	MarkFocusDirty();
 	_gamepad_focus_window = nullptr;
 	_gamepad_focus_widget = -1;
-	_focus_transfer_ticks = 0;
 }
 
 /** Collect candidates from one window. Dropdown items are individual candidates. */
@@ -135,8 +132,6 @@ static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 static Window *FrontWindowWithCandidates()
 {
 	for (Window *w : Window::IterateFromFront()) {
-		/* The in-game bottom bar belongs to MainWindow; the controller uses mouse + A there. */
-		if (_game_mode != GameMode::Menu && w->window_class == WindowClass::MainWindow) continue;
 		if (!CollectWindowCandidates(w).empty()) return w;
 	}
 	return nullptr;
@@ -323,25 +318,4 @@ void UpdateGamepadFocusAfterActivation()
 	auto candidates = CollectWindowCandidates(front);
 	const FocusCandidate *first = FirstCandidate(candidates);
 	if (first != nullptr) SetFocus(*first);
-}
-
-void RequestGamepadFocusTransfer()
-{
-	_focus_transfer_ticks = 60;
-}
-
-void TickGamepadFocusTransfer()
-{
-	if (_focus_transfer_ticks <= 0) return;
-	_focus_transfer_ticks--;
-
-	Window *front = FrontWindowWithCandidates();
-	if (front == nullptr || (front == _gamepad_focus_window && _gamepad_focus_widget >= 0)) return;
-
-	auto candidates = CollectWindowCandidates(front);
-	const FocusCandidate *first = FirstCandidate(candidates);
-	if (first != nullptr) {
-		SetFocus(*first);
-		_focus_transfer_ticks = 0;
-	}
 }

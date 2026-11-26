@@ -43,12 +43,8 @@ file records only what this fork adds.
 - Dropdown menu rows are now individual focus candidates; the red ring highlights one row
   instead of the whole list, and A selects that row.
 - D-pad focus is confined to the active window until B closes it, so modal/new-game windows
-  and rail/road menus cannot leak focus back into the main menu or toolbar.
-- In-game D-pad ignores `MainWindow` entirely; the bottom status bar (date/news/bank) is left
-  to mouse + A. D-pad navigation targets game toolbar and build windows.
-- Focus still transfers to a newly opened window after A activation. Delayed dropdown
-  selections are watched for a short window so focus follows roads/rail list items into the
-  resulting build window.
+  and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
+- Focus still transfers to a newly opened window after A activation.
 - Left-stick movement leaves focus mode and restores A as a held left click. Keyboard,
   mouse and touch activity also clear the focus ring.
 - Track touch as its own input source. QueryString edit boxes only raise the on-screen

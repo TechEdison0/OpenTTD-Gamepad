@@ -17,6 +17,7 @@
 #include "textbuf_gui.h"
 #include "video/video_driver.hpp"
 #include "core/string_consumer.hpp"
+#include "gamepad/actions.h"
 
 #include "widgets/osk_widget.h"
 
@@ -395,6 +396,8 @@ void GetKeyboardLayout()
  */
 void ShowOnScreenKeyboard(Window *parent, WidgetID button)
 {
+	if (GetInputSource() != InputSource::Touch) return;
+
 	CloseWindowById(WindowClass::OnScreenKeyboard, 0);
 
 	GetKeyboardLayout();

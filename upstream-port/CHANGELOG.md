@@ -40,6 +40,10 @@ file records only what this fork adds.
 - Touch-driven `MouseLoop()` calls are tagged so touch cursor movement is not mistaken for
   real mouse activity and yielded back to gamepad input.
 
+### Fixed
+- The OSK is now blocked at `ShowOnScreenKeyboard()` itself, not only at editbox click
+  dispatch. Opening the rail/road widget with a controller no longer raises the OSK.
+
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 
 ### Added

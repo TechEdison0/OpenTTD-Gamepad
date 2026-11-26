@@ -68,6 +68,7 @@ static int _gamepad_selection = -1;
  */
 static std::array<bool, 128> _gamepad_live_buttons = {};
 static std::array<int16_t, 64> _gamepad_live_axes = {};
+static std::array<bool, 64> _gamepad_live_axis_seen = {};
 static std::array<uint8_t, 16> _gamepad_live_hats = {};
 
 /** Forget the previous controller's control state. */
@@ -75,6 +76,7 @@ static void ClearGamepadLiveState()
 {
 	_gamepad_live_buttons.fill(false);
 	_gamepad_live_axes.fill(0);
+	_gamepad_live_axis_seen.fill(false);
 	_gamepad_live_hats.fill(SDL_HAT_CENTERED);
 }
 
@@ -290,6 +292,7 @@ static int SDLCALL GamepadEventFilter(void *, SDL_Event *event)
 			if (slot == nullptr || std::ranges::find(slot->usable_axes, event->jaxis.axis) == std::end(slot->usable_axes)) break;
 			if (IsSelectedGamepad(event->jaxis.which) && event->jaxis.axis < _gamepad_live_axes.size()) {
 				_gamepad_live_axes[event->jaxis.axis] = event->jaxis.value;
+				_gamepad_live_axis_seen[event->jaxis.axis] = true;
 			}
 			break;
 		}
@@ -393,7 +396,24 @@ bool GetGamepadLiveButton(uint8_t index)
 
 int16_t GetGamepadLiveAxis(uint8_t index)
 {
-	return index < _gamepad_live_axes.size() ? _gamepad_live_axes[index] : 0;
+	if (index >= _gamepad_live_axes.size()) return 0;
+	/* Trigger axes rest at the bottom of their range, not at zero. Until SDL reports
+	 * the first event they must still read as resting, otherwise a freshly loaded
+	 * config looks permanently active and mapping needs a second click. */
+	if (!_gamepad_live_axis_seen[index] && IsGamepadTriggerAxis(index)) return -32768;
+	return _gamepad_live_axes[index];
+}
+
+bool IsGamepadTriggerAxis(uint8_t index)
+{
+	if (_gamepad_selection < 0 || static_cast<size_t>(_gamepad_selection) >= _gamepad_slots.size()) return false;
+	const GamepadSlot &slot = _gamepad_slots[_gamepad_selection];
+	if (slot.gamecontroller == nullptr) return false;
+	for (SDL_GameControllerAxis trigger : {SDL_CONTROLLER_AXIS_TRIGGERLEFT, SDL_CONTROLLER_AXIS_TRIGGERRIGHT}) {
+		SDL_GameControllerButtonBind bind = SDL_GameControllerGetBindForAxis(slot.gamecontroller, trigger);
+		if (bind.bindType == SDL_CONTROLLER_BINDTYPE_AXIS && bind.value.axis == index) return true;
+	}
+	return false;
 }
 
 uint8_t GetGamepadLiveHat(uint8_t index)

@@ -93,7 +93,7 @@ std::vector<std::pair<std::string, std::string>> GetControllerMappingRows();
 /**
  * Whether a mapped control is currently active on the selected controller.
  * Buttons use their pressed state, axes must move away from rest (sticks: zero;
- * triggers: the bottom of their calibrated range), hats test direction bits.
+ * triggers: -32768), hats test direction bits.
  * @param step Position in the mapping list.
  */
 bool IsControllerMappingControlActive(size_t step);

@@ -70,8 +70,11 @@ void SetGamepadSelection(int index);
 /** Whether a raw button of the selected controller is currently held. */
 bool GetGamepadLiveButton(uint8_t index);
 
-/** Current value of a raw axis of the selected controller (0 when unavailable). */
+/** Current value of a raw axis of the selected controller (trigger axes rest at -32768). */
 int16_t GetGamepadLiveAxis(uint8_t index);
+
+/** Whether a raw axis index is a trigger axis on the selected controller. */
+bool IsGamepadTriggerAxis(uint8_t index);
 
 /** Current hat bitfield of the selected controller (centered when unavailable). */
 uint8_t GetGamepadLiveHat(uint8_t index);

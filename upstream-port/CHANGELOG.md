@@ -3,7 +3,7 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-26 — C1 bugfix: explicit axis calibration gesture
+## 2026-11-26 — C1 bugfix: explicit axis calibration gesture (released in `v20261126-c2-action-layer`)
 
 - Mapping now starts with only the **Press A** step visible. After A is mapped, a prompt
   asks the user to move both sticks in a circle, press and release LT/RT, release them,
@@ -27,8 +27,9 @@ file records only what this fork adds.
   rest gesture is required and standard pads such as SN30 Pro keep the simple flow.
 - Raw/unmapped controllers still use the explicit gesture, learned rest/range and
   edge-triggered capture. The two domains are never mixed at runtime.
-- `controller.cfg` axis values now include the rest value: `axis:N:min:max:rest`. Older
-  four-field values still parse; their rest is inferred from the step type.
+- `controller.cfg` now stores raw ranges as `axis:N:min:max:rest` and normalized SDL axes
+  as `logical:N:min:max:rest`. Older four-field raw values still parse; their rest is
+  inferred from the step type.
 
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 

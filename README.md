@@ -159,16 +159,19 @@ with the current value of every mapped input.
 
 The mapping flow has **18 steps**: buttons, D-pad directions, stick axes and triggers.
 Back/Select/Start/Guide are intentionally absent because Android devices claim them as
-system buttons; L3 pauses and R3 toggles fast forward. Sticks and triggers
-are captured with a ±22,000 detection threshold and always stored over the full SDL
-range (`-32768..32767`), so the direction of the test move cannot invert or truncate the
-mapping. Trigger axes read `-32768` until the first SDL event, so they are not active on
-first launch. After a capture, axis events are ignored for 500 ms so one gesture cannot
-map two axes.
+system buttons; L3 pauses and R3 toggles fast forward.
+
+Controllers SDL already maps use its normalized **logical axes**: sticks near zero with
+a `-32768..32767` range and triggers `0..32767`, so standard pads keep the simple
+one-move-per-prompt flow. Raw or unmapped controllers use an explicit calibration gesture
+and edge-triggered capture from a learned rest/range instead of assuming every axis rests
+at zero. In both paths, a captured axis must move away from rest before it can satisfy a
+prompt; after capture, axis events are ignored for 500 ms so one gesture cannot map two
+axes.
 
 Captured values are stored per controller in `controller.cfg` beside `hotkeys.cfg`
-(`button:N`, `axis:N:min:max`, `hat:H:bits`) and reloaded on start; finishing the flow
-auto-saves. Gyroscope/accelerometer-style axes are excluded.
+(`button:N`, `axis:N:min:max:rest`, `logical:N:min:max:rest`, `hat:H:bits`) and reloaded on
+start; finishing the flow auto-saves. Gyroscope/accelerometer-style axes are excluded.
 
 C2 adds normalized, press-and-release actions with no synthetic SDL events: A is a held
 left click, X is a held right click, Y cancels the active tool, LB/RB are held Ctrl/Shift,
@@ -183,7 +186,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
-| `v20261126-c2-action-layer` | C2 action layer: held A/X, modifiers, crosshair, zoom, pause/fast-forward, input-source switching |
+| `v20261126-c2-action-layer` | C2 action layer: held A/X, modifiers, crosshair, zoom, pause/fast-forward, normalized and raw axis mapping |
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |
 | `v20261123-rc1-static-test` | earlier snapshot: RC1 engine + donor Android glue, no gamepad code |

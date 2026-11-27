@@ -896,8 +896,9 @@ public:
 	Rect GetGamepadListRowRect(WidgetID widget, uint row) const override
 	{
 		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect().Shrink(WidgetDimensions::scaled.framerect);
-		int top = r.top + (static_cast<int>(row) - this->vscroll->GetPosition()) * this->resize.step_height;
-		return {r.left, top, r.right, top + this->resize.step_height};
+		int step = static_cast<int>(this->resize.step_height);
+		int top = r.top + (static_cast<int>(row) - this->vscroll->GetPosition()) * step;
+		return {r.left, top, r.right, top + step};
 	}
 
 	void OnGamepadListFocus(WidgetID widget, uint row) override

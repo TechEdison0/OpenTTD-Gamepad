@@ -148,7 +148,18 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C3 controller focus navigation
+### Current release — C4 viewport movement
+
+`v20261127-c4-viewport-movement` adds right-stick viewport pan. The right stick scrolls
+the main viewport through the existing joystick-scroll path with the shared 15% radial
+deadzone and gamma-2 response curve. It is independent of D-pad focus and the left-stick
+crosshair, so a build tool window can stay focused while the map moves and placement is
+still controlled with the left stick and A.
+
+The maintainer verified simultaneous left/right-stick use on Linux, Windows/Wine and
+Android Galaxy S25 Ultra.
+
+### Previous release — C3 controller focus navigation
 
 `v20261127-c3-controller-focus` completes the D-pad focus model. The red focus ring
 highlights one live widget at a time, D-pad navigation moves geometrically across windows,
@@ -201,6 +212,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261127-c4-viewport-movement` | C4 right-stick viewport pan, independent of D-pad focus and left-stick placement |
 | `v20261127-c3-controller-focus` | C3 focus navigation: red widget ring, D-pad window/dropdown navigation, focused A activation, B close, crosshair handoff |
 | `v20261126-c2-action-layer` | C2 playable controller pass: full UI navigation, held A/X, Ctrl/Shift modifiers, crosshair, zoom, pause/fast-forward |
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |

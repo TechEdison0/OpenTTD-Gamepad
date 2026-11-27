@@ -210,16 +210,16 @@ static int DirectionScore(const Rect &current, const FocusCandidate &candidate, 
 	switch (direction) {
 		case GamepadFocusDirection::Up:
 			if (next.bottom > current.top) return INT32_MAX;
-			return current.top - next.bottom + PerpendicularGap(current, next, false) * 4 + candidate.z_rank * 200;
+			return current.top - next.bottom + PerpendicularGap(current, next, false) * 4;
 		case GamepadFocusDirection::Down:
 			if (next.top < current.bottom) return INT32_MAX;
-			return next.top - current.bottom + PerpendicularGap(current, next, false) * 4 + candidate.z_rank * 200;
+			return next.top - current.bottom + PerpendicularGap(current, next, false) * 4;
 		case GamepadFocusDirection::Left:
 			if (next.right > current.left) return INT32_MAX;
-			return current.left - next.right + PerpendicularGap(current, next, true) * 4 + candidate.z_rank * 200;
+			return current.left - next.right + PerpendicularGap(current, next, true) * 4;
 		case GamepadFocusDirection::Right:
 			if (next.left < current.right) return INT32_MAX;
-			return next.left - current.right + PerpendicularGap(current, next, true) * 4 + candidate.z_rank * 200;
+			return next.left - current.right + PerpendicularGap(current, next, true) * 4;
 	}
 	return INT32_MAX;
 }
@@ -228,10 +228,10 @@ static int DirectionScore(const Rect &current, const FocusCandidate &candidate, 
 static int WrapScore(const FocusCandidate &candidate, GamepadFocusDirection direction)
 {
 	switch (direction) {
-		case GamepadFocusDirection::Up:    return -candidate.rect.bottom + candidate.z_rank * 200;
-		case GamepadFocusDirection::Down:  return  candidate.rect.top + candidate.z_rank * 200;
-		case GamepadFocusDirection::Left:  return -candidate.rect.right + candidate.z_rank * 200;
-		case GamepadFocusDirection::Right: return  candidate.rect.left + candidate.z_rank * 200;
+		case GamepadFocusDirection::Up:    return -candidate.rect.bottom;
+		case GamepadFocusDirection::Down:  return  candidate.rect.top;
+		case GamepadFocusDirection::Left:  return -candidate.rect.right;
+		case GamepadFocusDirection::Right: return  candidate.rect.left;
 	}
 	return INT32_MAX;
 }

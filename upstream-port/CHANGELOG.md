@@ -11,8 +11,9 @@ file records only what this fork adds.
   leaf-panel rule did not work for bus station direction widgets.
 - Slider and Advanced Options accordion focus experiments were removed; both stay on
   cursor control for now.
-- Main-menu background suppression was removed. D-pad candidates remain global, but
-  z-order now gives foreground windows priority for initial focus and direction scoring.
+- Main-menu background suppression was removed. D-pad candidates remain global, and
+  z-order gives foreground windows priority only when choosing initial focus. Directional
+  and wrap-around movement remain purely geometric so sub-windows navigate normally.
 
 ## 2026-11-27 — `v20261127-c4-viewport-movement` (C4 complete)
 

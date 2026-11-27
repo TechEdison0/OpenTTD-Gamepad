@@ -6091,3 +6091,6 @@ STR_CONTROLLER_LAUNCH_CAPTION                                   :{BLACK}Controll
 STR_CONTROLLER_GUIDE_BUTTON                                     :{BLACK}Controller Guide
 STR_CONTROLLER_MAPPING_BUTTON                                   :{BLACK}Controllers & Mapping
 STR_CONTROLLER_GUIDE_CAPTION                                    :{BLACK}Controller Guide
+STR_CONTROLLER_OPTIONS_BUTTON                                   :{BLACK}Controller Options
+STR_CONTROLLER_OPTIONS_CAPTION                                  :{BLACK}Controller Options
+STR_GAMEPAD_DEBUG_CAPTION                                       :{BLACK}Controller Diagnostics

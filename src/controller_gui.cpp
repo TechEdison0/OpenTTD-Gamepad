@@ -26,7 +26,11 @@
 #include "strings_func.h"
 #include "table/strings.h"
 #include "table/sprites.h"
+#include "textbuf_gui.h"
 
+#include <algorithm>
+#include <charconv>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -93,6 +97,7 @@ enum ControllerLaunchWidgets {
 	WID_CL_CAPTION,  ///< Window caption.
 	WID_CL_GUIDE,    ///< Open the controller function guide.
 	WID_CL_MAPPING,  ///< Open controller selection and mapping.
+	WID_CL_OPTIONS,  ///< Open controller options.
 	WID_CL_BACKGROUND, ///< Dark window background.
 };
 
@@ -106,9 +111,10 @@ static constexpr std::initializer_list<NWidgetPart> _controller_launch_widgets =
 	 * DrawWidget override paints its inside the same dark colour as the canvas. */
 	NWidget(WWT_PANEL, Colours::Grey, WID_CL_BACKGROUND),
 		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-			NWidget(NWID_HORIZONTAL), SetPIP(0, 8, 0),
-				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_GUIDE), SetMinimalSize(170, 20), SetStringTip(STR_CONTROLLER_GUIDE_BUTTON, STR_NULL),
+			NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_GUIDE), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_GUIDE_BUTTON, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_MAPPING), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_MAPPING_BUTTON, STR_NULL),
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_OPTIONS), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_OPTIONS_BUTTON, STR_NULL),
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -341,8 +347,8 @@ static WindowDesc _controller_guide_desc(
 );
 
 /** Launcher: choose the function guide or the mapping window. */
-void ShowControllerGuideWindow();
 void ShowControllerMappingWindow();
+void ShowControllerOptionsWindow();
 
 struct ControllerLaunchWindow : Window {
 	ControllerLaunchWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
@@ -358,9 +364,15 @@ struct ControllerLaunchWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING) {
+		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING || widget == WID_CL_OPTIONS) {
 			this->Close();
-			if (widget == WID_CL_GUIDE) ShowControllerGuideWindow(); else ShowControllerMappingWindow();
+			if (widget == WID_CL_GUIDE) {
+				ShowControllerGuideWindow();
+			} else if (widget == WID_CL_MAPPING) {
+				ShowControllerMappingWindow();
+			} else {
+				ShowControllerOptionsWindow();
+			}
 		}
 	}
 };
@@ -419,10 +431,228 @@ struct ControllerGuideWindow : Window {
 	}
 };
 
+/** Widgets of the controller options window. */
+enum ControllerOptionsWidgets {
+	WID_CO_CAPTION,   ///< Window caption.
+	WID_CO_BACKGROUND,///< Dark window background.
+	WID_CO_CANVAS,    ///< Option rows.
+};
+
+static constexpr std::initializer_list<NWidgetPart> _controller_options_widgets = {
+	NWidget(NWID_HORIZONTAL),
+		NWidget(WWT_CLOSEBOX, Colours::Grey),
+		NWidget(WWT_CAPTION, Colours::Grey, WID_CO_CAPTION), SetStringTip(STR_CONTROLLER_OPTIONS_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_STICKYBOX, Colours::Grey),
+	EndContainer(),
+	NWidget(WWT_PANEL, Colours::Grey, WID_CO_BACKGROUND),
+		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_CO_CANVAS), SetMinimalSize(520, 260), SetFill(1, 1),
+		EndContainer(),
+	EndContainer(),
+};
+
+static WindowDesc _controller_options_desc(
+	WindowPosition::Automatic, "controller_options", 0, 0,
+	WindowClass::ControllerOptions, WindowClass::None,
+	{},
+	_controller_options_widgets
+);
+
+/** Option rows shown in the controller options window. */
+enum ControllerOptionRow : uint {
+	CO_SWAP_STICKS,
+	CO_INVERT_LX,
+	CO_INVERT_LY,
+	CO_INVERT_RX,
+	CO_INVERT_RY,
+	CO_INVERT_LT,
+	CO_INVERT_RT,
+	CO_DEADZONE_LS,
+	CO_DEADZONE_RS,
+	CO_DEADZONE_LT,
+	CO_DEADZONE_RT,
+	CO_SPEED_LS,
+	CO_SPEED_RS,
+	CO_COUNT,
+};
+
+static const char *GetControllerOptionLabel(uint row)
+{
+	switch (row) {
+		case CO_SWAP_STICKS: return "Swap sticks";
+		case CO_INVERT_LX:   return "L Stick X Invert";
+		case CO_INVERT_LY:   return "L Stick Y Invert";
+		case CO_INVERT_RX:   return "R Stick X Invert";
+		case CO_INVERT_RY:   return "R Stick Y Invert";
+		case CO_INVERT_LT:   return "L Trigger Invert";
+		case CO_INVERT_RT:   return "R Trigger Invert";
+		case CO_DEADZONE_LS: return "L Stick Deadzone";
+		case CO_DEADZONE_RS: return "R Stick Deadzone";
+		case CO_DEADZONE_LT: return "L Trigger Deadzone";
+		case CO_DEADZONE_RT: return "R Trigger Deadzone";
+		case CO_SPEED_LS:    return "L Stick Speed";
+		case CO_SPEED_RS:    return "R Stick Speed";
+		default:             return "";
+	}
+}
+
+static std::string GetControllerOptionValue(uint row)
+{
+	const ControllerOptions &opt = GetControllerOptions();
+	switch (row) {
+		case CO_SWAP_STICKS: return opt.swap_sticks ? "On" : "Off";
+		case CO_INVERT_LX:   return opt.invert_left_x ? "On" : "Off";
+		case CO_INVERT_LY:   return opt.invert_left_y ? "On" : "Off";
+		case CO_INVERT_RX:   return opt.invert_right_x ? "On" : "Off";
+		case CO_INVERT_RY:   return opt.invert_right_y ? "On" : "Off";
+		case CO_INVERT_LT:   return opt.invert_left_trigger ? "On" : "Off";
+		case CO_INVERT_RT:   return opt.invert_right_trigger ? "On" : "Off";
+		case CO_DEADZONE_LS: return fmt::format("{}%", opt.deadzone_left_stick);
+		case CO_DEADZONE_RS: return fmt::format("{}%", opt.deadzone_right_stick);
+		case CO_DEADZONE_LT: return fmt::format("{}%", opt.deadzone_left_trigger);
+		case CO_DEADZONE_RT: return fmt::format("{}%", opt.deadzone_right_trigger);
+		case CO_SPEED_LS:
+		case CO_SPEED_RS: {
+			ControllerAxisSpeed speed = row == CO_SPEED_LS ? opt.left_stick_speed : opt.right_stick_speed;
+			switch (speed) {
+				case ControllerAxisSpeed::Slow:   return "Slow";
+				case ControllerAxisSpeed::Normal: return "Normal";
+				case ControllerAxisSpeed::Fast:   return "Fast";
+			}
+			return "Normal";
+		}
+		default: return "";
+	}
+}
+
+/** Controller options window. Option rows are custom-drawn and gamepad-focusable. */
+struct ControllerOptionsWindow : Window {
+	uint row_height = 0;       ///< Height of one option row.
+	uint pending_option = 0;   ///< Row currently being edited by a query/dropdown.
+
+	ControllerOptionsWindow(WindowDesc &desc, WindowNumber number) : Window(desc)
+	{
+		this->row_height = GetCharacterHeight(FontSize::Normal) + 8;
+		this->InitNested(number);
+	}
+
+	uint GetGamepadListRowCount(WidgetID widget) const override
+	{
+		return widget == WID_CO_CANVAS ? static_cast<uint>(CO_COUNT) : 0;
+	}
+
+	Rect GetGamepadListRowRect(WidgetID widget, uint row) const override
+	{
+		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect();
+		int top = r.top + 2 + static_cast<int>(row) * static_cast<int>(this->row_height);
+		return {r.left, top, r.right, top + static_cast<int>(this->row_height)};
+	}
+
+	void OnGamepadListSelect(WidgetID widget, uint row) override
+	{
+		if (widget == WID_CO_CANVAS && row < CO_COUNT) this->ActivateOption(row);
+	}
+
+	void DrawWidget(const Rect &r, WidgetID widget) const override
+	{
+		if (widget == WID_CO_BACKGROUND) GfxFillRect(r.Shrink(1), PC_BLACK);
+		if (widget != WID_CO_CANVAS) return;
+
+		int y = r.top + 2;
+		for (uint row = 0; row < CO_COUNT; row++) {
+			DrawString(r.left + 6, r.right - 170, y, GetControllerOptionLabel(row), TextColour::White, AlignmentH::Start, false, FontSize::Normal);
+			DrawString(r.right - 165, r.right - 6, y, GetControllerOptionValue(row), TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
+			y += static_cast<int>(this->row_height);
+		}
+	}
+
+	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
+	{
+		if (widget != WID_CO_CANVAS) return;
+		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect();
+		if (pt.y <= r.top + 2) return;
+		uint row = static_cast<uint>((pt.y - r.top - 2) / static_cast<int>(this->row_height));
+		if (row < CO_COUNT) this->ActivateOption(row);
+	}
+
+	void OnQueryTextFinished(std::optional<std::string> str) override
+	{
+		if (!str.has_value()) return;
+		int value = 0;
+		auto result = std::from_chars(str->data(), str->data() + str->size(), value);
+		if (result.ec != std::errc{}) return;
+		value = std::clamp(value, 0, 100);
+
+		ControllerOptions &opt = GetControllerOptions();
+		switch (this->pending_option) {
+			case CO_DEADZONE_LS: opt.deadzone_left_stick = static_cast<uint8_t>(value); break;
+			case CO_DEADZONE_RS: opt.deadzone_right_stick = static_cast<uint8_t>(value); break;
+			case CO_DEADZONE_LT: opt.deadzone_left_trigger = static_cast<uint8_t>(value); break;
+			case CO_DEADZONE_RT: opt.deadzone_right_trigger = static_cast<uint8_t>(value); break;
+			default: return;
+		}
+		SaveControllerConfig();
+		this->SetDirty();
+	}
+
+	void OnDropdownSelect(WidgetID widget, int index, int) override
+	{
+		if (widget != WID_CO_CANVAS || index < 0 || index > 2) return;
+		ControllerAxisSpeed speed = static_cast<ControllerAxisSpeed>(index);
+		ControllerOptions &opt = GetControllerOptions();
+		if (this->pending_option == CO_SPEED_LS) {
+			opt.left_stick_speed = speed;
+		} else if (this->pending_option == CO_SPEED_RS) {
+			opt.right_stick_speed = speed;
+		} else {
+			return;
+		}
+		SaveControllerConfig();
+		this->SetDirty();
+	}
+
+private:
+	void ActivateOption(uint row)
+	{
+		ControllerOptions &opt = GetControllerOptions();
+		switch (row) {
+			case CO_SWAP_STICKS:      opt.swap_sticks = !opt.swap_sticks; break;
+			case CO_INVERT_LX:        opt.invert_left_x = !opt.invert_left_x; break;
+			case CO_INVERT_LY:        opt.invert_left_y = !opt.invert_left_y; break;
+			case CO_INVERT_RX:        opt.invert_right_x = !opt.invert_right_x; break;
+			case CO_INVERT_RY:        opt.invert_right_y = !opt.invert_right_y; break;
+			case CO_INVERT_LT:        opt.invert_left_trigger = !opt.invert_left_trigger; break;
+			case CO_INVERT_RT:        opt.invert_right_trigger = !opt.invert_right_trigger; break;
+			case CO_DEADZONE_LS:
+			case CO_DEADZONE_RS:
+			case CO_DEADZONE_LT:
+			case CO_DEADZONE_RT:
+				this->pending_option = row;
+				ShowQueryString(GetControllerOptionValue(row), STR_CONFIG_SETTING_QUERY_CAPTION, 4, this, CS_NUMERAL, {});
+				return;
+			case CO_SPEED_LS:
+			case CO_SPEED_RS: {
+				this->pending_option = row;
+				DropDownList list;
+				list.push_back(MakeDropDownListStringItem("Slow", 0));
+				list.push_back(MakeDropDownListStringItem("Normal", 1));
+				list.push_back(MakeDropDownListStringItem("Fast", 2));
+				int selected = static_cast<int>(row == CO_SPEED_LS ? opt.left_stick_speed : opt.right_stick_speed);
+				ShowDropDownList(this, std::move(list), selected, WID_CO_CANVAS);
+				return;
+			}
+			default: return;
+		}
+		SaveControllerConfig();
+		this->SetDirty();
+	}
+};
+
 void ShowControllerLaunchWindow()
 {
 	CloseWindowByClass(WindowClass::Controller);
 	CloseWindowByClass(WindowClass::ControllerGuide);
+	CloseWindowByClass(WindowClass::ControllerOptions);
 	new ControllerLaunchWindow(_controller_launch_desc, 0);
 }
 
@@ -436,6 +666,12 @@ void ShowControllerGuideWindow()
 {
 	CloseWindowByClass(WindowClass::ControllerGuide);
 	new ControllerGuideWindow(_controller_guide_desc, 0);
+}
+
+void ShowControllerOptionsWindow()
+{
+	CloseWindowByClass(WindowClass::ControllerOptions);
+	new ControllerOptionsWindow(_controller_options_desc, 0);
 }
 
 void ShowControllerWindow()

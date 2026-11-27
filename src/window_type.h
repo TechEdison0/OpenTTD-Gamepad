@@ -758,6 +758,11 @@ enum class WindowClass : uint16_t {
 	 */
 	ControllerGuide,
 
+	/**
+	 * Controller options window (invert, deadzone, speed, stick swap), added by C6.
+	 */
+	ControllerOptions,
+
 	Invalid = 0xFFFF, ///< Invalid window.
 };
 

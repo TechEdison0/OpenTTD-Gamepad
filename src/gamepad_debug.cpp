@@ -16,6 +16,8 @@
 #include "window_func.h"
 #include "gfx_func.h"
 #include "palette_func.h"
+#include "strings_func.h"
+#include "table/strings.h"
 
 #include <deque>
 #include <mutex>
@@ -43,18 +45,21 @@ void GamepadDebugRecord(std::string_view text)
 
 /** Widgets of the controller diagnostics window. */
 enum GamepadDebugWidgets {
-	WID_GPD_CAPTION, ///< Window caption.
-	WID_GPD_CANVAS,  ///< Area the event lines are drawn into.
+	WID_GPD_CAPTION,    ///< Window caption.
+	WID_GPD_BACKGROUND, ///< Dark window background.
+	WID_GPD_CANVAS,     ///< Area the event lines are drawn into.
 };
 
 static constexpr std::initializer_list<NWidgetPart> _gamepad_debug_widgets = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, Colours::Grey),
-		NWidget(WWT_CAPTION, Colours::Grey, WID_GPD_CAPTION), SetTextStyle(TextColour::White),
+		NWidget(WWT_CAPTION, Colours::Grey, WID_GPD_CAPTION), SetStringTip(STR_GAMEPAD_DEBUG_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
 		NWidget(WWT_STICKYBOX, Colours::Grey),
 	EndContainer(),
-	NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
-		NWidget(WWT_EMPTY, Colours::Invalid, WID_GPD_CANVAS), SetMinimalSize(320, 200), SetFill(1, 1),
+	NWidget(WWT_PANEL, Colours::Grey, WID_GPD_BACKGROUND),
+		NWidget(NWID_VERTICAL), SetPadding(WidgetDimensions::unscaled.frametext),
+			NWidget(WWT_EMPTY, Colours::Invalid, WID_GPD_CANVAS), SetMinimalSize(480, 300), SetFill(1, 1),
+		EndContainer(),
 	EndContainer(),
 };
 
@@ -91,9 +96,10 @@ public:
 
 	void DrawWidget(const Rect &r, WidgetID widget) const override
 	{
+		if (widget == WID_GPD_BACKGROUND) GfxFillRect(r.Shrink(1), PC_BLACK);
 		if (widget != WID_GPD_CANVAS) return;
 
-		const int line_height = GetCharacterHeight(FontSize::Small);
+		const int line_height = GetCharacterHeight(FontSize::Normal);
 		int y = r.top;
 
 		/* Custom widgets do not get a background painted for us; clear it ourselves or
@@ -106,7 +112,7 @@ public:
 		std::lock_guard<std::mutex> lock(_gamepad_debug_mutex);
 		for (auto it = _gamepad_debug_lines.rbegin(); it != _gamepad_debug_lines.rend(); ++it) {
 			if (y + line_height > r.bottom) break;
-			DrawString(r.left, r.right, y, *it, TextColour::White, AlignmentH::Start, false, FontSize::Small);
+			DrawString(r.left, r.right, y, *it, TextColour::Silver, AlignmentH::Start, false, FontSize::Normal);
 			y += line_height;
 		}
 	}

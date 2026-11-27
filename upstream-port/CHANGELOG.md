@@ -11,6 +11,12 @@ file records only what this fork adds.
   presets before the response curve.
 - Stick swap exchanges both axis pairs and the L3/R3 pause/fast-forward actions.
 - Defaults preserve current C4 behavior: no invert, no swap, normal speed.
+- Controller main menu is now a vertical stack with Guide, Controllers & Mapping and
+  Controller Options.
+- Controller Options exposes toggles for invert and swap, percentage text entry for
+  deadzones, and slow/normal/fast dropdowns per stick. Rows are gamepad-focusable.
+- Controller diagnostics window follows the current dark panel/caption-string style and
+  remains toggleable by build flag, compiled off by default.
 
 ## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 

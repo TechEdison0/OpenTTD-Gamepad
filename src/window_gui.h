@@ -677,10 +677,8 @@ public:
 	virtual void OnGamepadListFocus([[maybe_unused]] WidgetID widget, [[maybe_unused]] uint row) {}
 	/** Activate one virtual list row. */
 	virtual void OnGamepadListSelect([[maybe_unused]] WidgetID widget, [[maybe_unused]] uint row) {}
-	/** Slider metadata for left-stick adjustment. */
-	virtual bool GetGamepadSliderInfo([[maybe_unused]] WidgetID widget, [[maybe_unused]] int &min_value, [[maybe_unused]] int &max_value, [[maybe_unused]] int &value) const { return false; }
-	/** Apply a left-stick slider delta while a slider is focused. */
-	virtual void OnGamepadSliderDelta([[maybe_unused]] WidgetID widget, [[maybe_unused]] int delta) {}
+	/** Opt a custom-drawn widget into gamepad focus. */
+	virtual bool IsGamepadFocusableWidget([[maybe_unused]] WidgetID widget) const { return false; }
 
 	/**
 	 * A click with the right mouse button has been made on the window.

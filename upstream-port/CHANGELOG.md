@@ -3,14 +3,16 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-27 — C5 list and slider navigation (in progress)
+## 2026-11-27 — C5 list navigation (in progress)
 
-- Added generic window hooks for custom-drawn list rows and sliders.
-- Town Directory town rows and Advanced Options accordion/settings rows are now focusable,
-  scroll into view and activate with A.
-- Focused sliders in Game Options and the Music window are adjusted with the left stick.
-- Leaf custom-drawn direction panels, including station orientation buttons, are now
-  focusable alongside the existing depot direction buttons.
+- Added generic window hooks for custom-drawn list rows and explicitly focusable widgets.
+- Town Directory town rows are now focusable, scroll into view and activate with A.
+- Road and rail station orientation panels are explicitly focusable. The earlier generic
+  leaf-panel rule did not work for bus station direction widgets.
+- Slider and Advanced Options accordion focus experiments were removed; both stay on
+  cursor control for now.
+- Main-menu background suppression was removed. D-pad candidates remain global, but
+  z-order now gives foreground windows priority for initial focus and direction scoring.
 
 ## 2026-11-27 — `v20261127-c4-viewport-movement` (C4 complete)
 

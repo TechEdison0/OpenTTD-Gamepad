@@ -805,42 +805,6 @@ struct MusicWindow : public Window {
 		}
 	}
 
-	bool GetGamepadSliderInfo(WidgetID widget, int &min_value, int &max_value, int &value) const override
-	{
-		switch (widget) {
-			case WID_M_MUSIC_VOL:
-				min_value = 0; max_value = INT8_MAX; value = _settings_client.music.music_vol; return true;
-			case WID_M_EFFECT_VOL:
-				min_value = 0; max_value = INT8_MAX; value = _settings_client.music.effect_vol; return true;
-			default:
-				return false;
-		}
-	}
-
-	void OnGamepadSliderDelta(WidgetID widget, int delta) override
-	{
-		switch (widget) {
-			case WID_M_MUSIC_VOL: {
-				uint8_t vol = Clamp(static_cast<int>(_settings_client.music.music_vol) + delta, 0, INT8_MAX);
-				_settings_client.music.music_vol = vol;
-				MusicDriver::GetInstance()->SetVolume(vol);
-				this->SetWidgetDirty(widget);
-				SetWindowClassesDirty(WindowClass::GameOptions);
-				break;
-			}
-			case WID_M_EFFECT_VOL: {
-				uint8_t vol = Clamp(static_cast<int>(_settings_client.music.effect_vol) + delta, 0, INT8_MAX);
-				_settings_client.music.effect_vol = vol;
-				SetEffectVolume(vol);
-				this->SetWidgetDirty(widget);
-				SetWindowClassesDirty(WindowClass::GameOptions);
-				break;
-			}
-			default:
-				break;
-		}
-	}
-
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
 		switch (widget) {

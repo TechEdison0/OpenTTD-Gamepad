@@ -1419,6 +1419,11 @@ private:
 	}
 
 public:
+	bool IsGamepadFocusableWidget(WidgetID widget) const override
+	{
+		return widget >= WID_BROS_STATION_NE && widget <= WID_BROS_STATION_Y;
+	}
+
 	BuildRoadStationWindow(WindowDesc &desc, Window *parent, RoadStopType rs) : PickerWindow(desc, parent, TransportType::Road, GetRoadStopPickerCallbacks(rs))
 	{
 		this->coverage_height = 2 * GetCharacterHeight(FontSize::Normal) + WidgetDimensions::scaled.vsep_normal;

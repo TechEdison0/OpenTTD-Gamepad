@@ -1150,6 +1150,11 @@ private:
 	}
 
 public:
+	bool IsGamepadFocusableWidget(WidgetID widget) const override
+	{
+		return widget == WID_BRAS_PLATFORM_DIR_X || widget == WID_BRAS_PLATFORM_DIR_Y;
+	}
+
 	BuildRailStationWindow(WindowDesc &desc, Window *parent) : PickerWindow(desc, parent, TransportType::Rail, StationPickerCallbacks::instance)
 	{
 		this->coverage_height = 2 * GetCharacterHeight(FontSize::Normal) + WidgetDimensions::scaled.vsep_normal;

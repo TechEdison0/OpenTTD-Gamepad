@@ -18,7 +18,6 @@
 #include "../gfx_func.h"
 #include "../toolbar_gui.h"
 #include "../window_func.h"
-#include "../window_gui.h"
 
 #include <cmath>
 
@@ -223,31 +222,13 @@ void HandleGamepadActions()
 		active[i] = IsControllerMappingControlActive(i);
 	}
 
-	/* Left stick: adjust a focused slider in place, otherwise drive the crosshair. */
+	/* Left stick is a direct crosshair. Sliders stay on cursor control for C5. */
 	static constexpr int CROSSHAIR_SPEED = 12; // pixels per tick at full deflection
-	static constexpr int SLIDER_SPEED = 1;     // slider steps per tick at full deflection
 	int delta_x = 0;
 	int delta_y = 0;
 	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_LSTICK_X),
 			GetControllerMappingAxisValue(GAP_LSTICK_Y), CROSSHAIR_SPEED, delta_x, delta_y);
-
-	Window *focus_w = nullptr;
-	WidgetID focus_widget = -1;
-	int slider_min = 0;
-	int slider_max = 0;
-	int slider_value = 0;
-	bool on_slider = GetGamepadFocus(focus_w, focus_widget) &&
-			focus_w->GetGamepadSliderInfo(focus_widget, slider_min, slider_max, slider_value);
-
-	if (on_slider) {
-		int slider_delta = 0;
-		int unused = 0;
-		ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_LSTICK_X), 0, SLIDER_SPEED, slider_delta, unused);
-		if (slider_delta != 0) {
-			focus_w->OnGamepadSliderDelta(focus_widget, slider_delta);
-			_input_source = InputSource::Gamepad;
-		}
-	} else if (delta_x != 0 || delta_y != 0) {
+	if (delta_x != 0 || delta_y != 0) {
 		RestoreGamepadCursorPosition();
 		MoveGamepadCursor(delta_x, delta_y);
 		ClearGamepadFocus();

@@ -31,6 +31,7 @@ struct FocusCandidate {
 	WidgetID widget;
 	Rect rect;
 	int list_row = -1; ///< Row index for virtual list candidates, otherwise -1.
+	int z_rank = 0;    ///< Z-order rank; lower means closer to the front.
 };
 
 /** Check whether a widget should participate in focus navigation. */
@@ -84,34 +85,28 @@ static bool FocusWindowAlive(Window *w)
 	return false;
 }
 
-/** Suppress the main-menu root while a dialog with its own widgets is open. */
-static bool IsWindowSuppressed(const Window *w)
-{
-	if (IsExcludedFromGamepadFocus(w)) return true;
-	if (w->window_class != WindowClass::SelectGame) return false;
 
-	for (Window *other : Window::IterateFromFront()) {
-		if (other == w || IsExcludedFromGamepadFocus(other)) continue;
-		if (other->window_class == WindowClass::ToolTips || other->window_class == WindowClass::MainWindow) continue;
-		for (const auto &pair : other->widget_lookup) {
-			NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
-			if (IsFocusableWidget(nw)) return true;
-		}
+static int GetWindowZRank(const Window *w)
+{
+	int rank = 0;
+	for (Window *candidate : Window::IterateFromFront()) {
+		if (candidate == w) return rank;
+		rank++;
 	}
-	return false;
+	return rank;
 }
 
 static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, WidgetID widget, Rect rect, int list_row = -1)
 {
 	if (rect.Width() <= 0 || rect.Height() <= 0) return;
-	candidates.push_back({w, widget, rect, list_row});
+	candidates.push_back({w, widget, rect, list_row, GetWindowZRank(w)});
 }
 
 /** Collect candidates from one window. Dropdown items are individual candidates. */
 static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 {
 	std::vector<FocusCandidate> candidates;
-	if (IsWindowSuppressed(w)) return candidates;
+	if (IsExcludedFromGamepadFocus(w)) return candidates;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
 		int count = GetDropdownFocusItemCount(w);
@@ -125,16 +120,7 @@ static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 		NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
 		if (nw == nullptr || nw->GetIndex() < 0) continue;
 
-		bool focusable = IsFocusableWidget(nw);
-		if (!focusable && (nw->type & WWT_MASK) == WWT_PANEL) {
-			/* Custom-drawn push panels (station/depot direction buttons) are leaf panels. */
-			NWidgetContainer *container = dynamic_cast<NWidgetContainer *>(nw);
-			focusable = container != nullptr && container->IsEmpty();
-		}
-		if (!focusable) {
-			int min_value, max_value, value;
-			if (w->GetGamepadSliderInfo(nw->GetIndex(), min_value, max_value, value)) focusable = true;
-		}
+		bool focusable = IsFocusableWidget(nw) || w->IsGamepadFocusableWidget(nw->GetIndex());
 
 		uint rows = w->GetGamepadListRowCount(nw->GetIndex());
 		if (rows > 0) {
@@ -189,6 +175,7 @@ void ClearGamepadFocus()
 	MarkFocusDirty();
 	_gamepad_focus_window = nullptr;
 	_gamepad_focus_widget = -1;
+	_gamepad_focus_row = -1;
 }
 
 static const FocusCandidate *FirstCandidate(const std::vector<FocusCandidate> &candidates)
@@ -196,7 +183,7 @@ static const FocusCandidate *FirstCandidate(const std::vector<FocusCandidate> &c
 	const FocusCandidate *best = nullptr;
 	int best_score = INT32_MAX;
 	for (const FocusCandidate &candidate : candidates) {
-		int score = candidate.rect.top * 10000 + candidate.rect.left;
+		int score = candidate.z_rank * 10000000 + candidate.rect.top * 10000 + candidate.rect.left;
 		if (score < best_score) {
 			best_score = score;
 			best = &candidate;
@@ -223,16 +210,16 @@ static int DirectionScore(const Rect &current, const FocusCandidate &candidate, 
 	switch (direction) {
 		case GamepadFocusDirection::Up:
 			if (next.bottom > current.top) return INT32_MAX;
-			return current.top - next.bottom + PerpendicularGap(current, next, false) * 4;
+			return current.top - next.bottom + PerpendicularGap(current, next, false) * 4 + candidate.z_rank * 200;
 		case GamepadFocusDirection::Down:
 			if (next.top < current.bottom) return INT32_MAX;
-			return next.top - current.bottom + PerpendicularGap(current, next, false) * 4;
+			return next.top - current.bottom + PerpendicularGap(current, next, false) * 4 + candidate.z_rank * 200;
 		case GamepadFocusDirection::Left:
 			if (next.right > current.left) return INT32_MAX;
-			return current.left - next.right + PerpendicularGap(current, next, true) * 4;
+			return current.left - next.right + PerpendicularGap(current, next, true) * 4 + candidate.z_rank * 200;
 		case GamepadFocusDirection::Right:
 			if (next.left < current.right) return INT32_MAX;
-			return next.left - current.right + PerpendicularGap(current, next, true) * 4;
+			return next.left - current.right + PerpendicularGap(current, next, true) * 4 + candidate.z_rank * 200;
 	}
 	return INT32_MAX;
 }
@@ -241,10 +228,10 @@ static int DirectionScore(const Rect &current, const FocusCandidate &candidate, 
 static int WrapScore(const FocusCandidate &candidate, GamepadFocusDirection direction)
 {
 	switch (direction) {
-		case GamepadFocusDirection::Up:    return -candidate.rect.bottom;
-		case GamepadFocusDirection::Down:  return  candidate.rect.top;
-		case GamepadFocusDirection::Left:  return -candidate.rect.right;
-		case GamepadFocusDirection::Right: return  candidate.rect.left;
+		case GamepadFocusDirection::Up:    return -candidate.rect.bottom + candidate.z_rank * 200;
+		case GamepadFocusDirection::Down:  return  candidate.rect.top + candidate.z_rank * 200;
+		case GamepadFocusDirection::Left:  return -candidate.rect.right + candidate.z_rank * 200;
+		case GamepadFocusDirection::Right: return  candidate.rect.left + candidate.z_rank * 200;
 	}
 	return INT32_MAX;
 }
@@ -261,7 +248,7 @@ static Rect GetFocusRect(bool &valid)
 	}
 
 	NWidgetCore *nw = _gamepad_focus_window->GetWidget<NWidgetCore>(_gamepad_focus_widget);
-	if (nw == nullptr || !IsFocusableWidget(nw)) return {};
+	if (nw == nullptr || (!IsFocusableWidget(nw) && !_gamepad_focus_window->IsGamepadFocusableWidget(_gamepad_focus_widget))) return {};
 	Rect local = nw->GetCurrentRect();
 	int cx = (local.left + local.right) / 2;
 	int cy = (local.top + local.bottom) / 2;
@@ -307,17 +294,17 @@ static bool FindLastFocusCandidate(FocusCandidate &out)
 	if (w->window_class == WindowClass::DropdownMenu) {
 		Rect r = GetDropdownFocusItemRect(w, _last_focus_widget);
 		if (r.Width() <= 0 || r.Height() <= 0) return false;
-		out = {w, _last_focus_widget, r};
+		out = {w, _last_focus_widget, r, -1, GetWindowZRank(w)};
 		return true;
 	}
 
 	NWidgetCore *nw = w->GetWidget<NWidgetCore>(_last_focus_widget);
-	if (nw == nullptr || !IsFocusableWidget(nw)) return false;
+	if (nw == nullptr || (!IsFocusableWidget(nw) && !w->IsGamepadFocusableWidget(_last_focus_widget))) return false;
 	Rect local = nw->GetCurrentRect();
 	int cx = (local.left + local.right) / 2;
 	int cy = (local.top + local.bottom) / 2;
 	if (GetWidgetFromPos(w, cx, cy) != _last_focus_widget) return false;
-	out = {w, _last_focus_widget, local.Translate(w->left, w->top)};
+	out = {w, _last_focus_widget, local.Translate(w->left, w->top), -1, GetWindowZRank(w)};
 	return true;
 }
 

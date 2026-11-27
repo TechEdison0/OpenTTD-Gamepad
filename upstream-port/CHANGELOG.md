@@ -3,17 +3,32 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-27 — C5 list navigation (in progress)
+## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 
-- Added generic window hooks for custom-drawn list rows and explicitly focusable widgets.
+Targeted navigation refinements for town lists, station direction widgets and picker
+sub-window edge cases.
+
+### What's in it
+
 - Town Directory town rows are now focusable, scroll into view and activate with A.
-- Road and rail station orientation panels are explicitly focusable. The earlier generic
+- Road and rail station orientation panels are explicitly focusable; the earlier generic
   leaf-panel rule did not work for bus station direction widgets.
+- Initial D-pad focus prefers foreground windows; directional and wrap-around movement
+  remain purely geometric so roads/rails/terrain picker sub-windows navigate normally.
+- Background widgets remain reachable; the previous main-menu root suppression is gone.
+
+### Fixed
+
+- Left/right and up no longer snap back to the top toolbar from picker sub-windows.
 - Slider and Advanced Options accordion focus experiments were removed; both stay on
-  cursor control for now.
-- Main-menu background suppression was removed. D-pad candidates remain global, and
-  z-order gives foreground windows priority only when choosing initial focus. Directional
-  and wrap-around movement remain purely geometric so sub-windows navigate normally.
+  cursor control.
+- Android town-row rectangle narrowing was corrected.
+
+### Verified
+
+Compiled and manually tested on Linux x86_64, Windows x86_64 under Wine and Android
+arm64-v8a on a Samsung Galaxy S25 Ultra. The maintainer reported all tests passing on
+all three targets after the station direction and foreground-focus refinements.
 
 ## 2026-11-27 — `v20261127-c4-viewport-movement` (C4 complete)
 

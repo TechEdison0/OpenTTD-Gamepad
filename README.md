@@ -59,10 +59,9 @@ rebased onto future upstream release tags only — never nightlies.
 UI behaviour follows controller conventions from Cities: Skylines, Civilization and
 similar top-down strategy games.
 
-Planned engine shape (not yet implemented): platform-neutral action layer in core
-(`src/`) — discovery → normalization → binding → dispatch, with thin per-platform
-backends; a focus ring drawn by OpenTTD's own renderer; geometric D-pad navigation
-using live widget geometry; toolbar A activates / B backs out.
+Controller implementation: discovery → normalization → binding → dispatch in
+`src/gamepad/`, a red focus ring drawn by OpenTTD's renderer, geometric D-pad navigation
+over live widget geometry, toolbar A activation and B back-out.
 
 ## Building
 
@@ -148,7 +147,19 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C4 viewport movement
+### Current release — C5 navigation refinements
+
+`v20261127-c5-navigation-refinements` refines controller navigation for specific widgets
+and edge cases. Town Directory town rows are focusable and activate with A, and road/rail
+station direction panels are reachable with the D-pad. Initial focus prefers foreground
+windows while directional navigation stays geometric, so picker sub-windows such as roads,
+rails and terrain no longer snap back to the top toolbar. Slider and Advanced Options
+accordion editing stays on cursor control.
+
+The maintainer verified the changes on Linux x86_64, Windows/Wine and Android Galaxy S25
+Ultra.
+
+### Previous release — C4 viewport movement
 
 `v20261127-c4-viewport-movement` adds right-stick viewport pan. The right stick scrolls
 the main viewport through the existing joystick-scroll path with the shared 15% radial
@@ -212,6 +223,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261127-c5-navigation-refinements` | C5 navigation refinements: town rows, station direction panels, picker sub-window focus |
 | `v20261127-c4-viewport-movement` | C4 right-stick viewport pan, independent of D-pad focus and left-stick placement |
 | `v20261127-c3-controller-focus` | C3 focus navigation: red widget ring, D-pad window/dropdown navigation, focused A activation, B close, crosshair handoff |
 | `v20261126-c2-action-layer` | C2 playable controller pass: full UI navigation, held A/X, Ctrl/Shift modifiers, crosshair, zoom, pause/fast-forward |

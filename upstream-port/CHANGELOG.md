@@ -3,6 +3,15 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-27 — C6 controller options (in progress)
+
+- Added per-controller invert, deadzone, stick-swap and stick-speed settings to the
+  options model and config persistence.
+- Runtime stick handling now applies invert, configurable radial deadzone and speed
+  presets before the response curve.
+- Stick swap exchanges both axis pairs and the L3/R3 pause/fast-forward actions.
+- Defaults preserve current C4 behavior: no invert, no swap, normal speed.
+
 ## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 
 Targeted navigation refinements for town lists, station direction widgets and picker

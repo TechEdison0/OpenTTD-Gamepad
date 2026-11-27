@@ -132,7 +132,7 @@ void GetGamepadModifiers(bool &ctrl, bool &shift)
 	shift = _shift_from_gamepad;
 }
 
-void ApplyGamepadStickResponse(int x, int y, int speed, int &out_x, int &out_y)
+void ApplyGamepadStickResponse(int x, int y, int deadzone, int speed, int &out_x, int &out_y)
 {
 	out_x = 0;
 	out_y = 0;
@@ -140,11 +140,11 @@ void ApplyGamepadStickResponse(int x, int y, int speed, int &out_x, int &out_y)
 	/* Scaled radial deadzone: rescale after removing the deadzone so the stick does
 	 * not jump from 0 to full sensitivity at the edge. Then gamma 2 keeps the first
 	 * quarter of travel fine and ramps the remaining three quarters quickly. */
-	static constexpr double DEADZONE = 15.0;
+	double zone = std::clamp(static_cast<double>(deadzone), 0.0, 99.0);
 	double magnitude = std::sqrt(static_cast<double>(x * x + y * y));
-	if (magnitude <= DEADZONE) return;
+	if (magnitude <= zone) return;
 
-	double scaled = (magnitude - DEADZONE) * 100.0 / (100.0 - DEADZONE);
+	double scaled = (magnitude - zone) * 100.0 / (100.0 - zone);
 	if (scaled > 100.0) scaled = 100.0;
 	double curved = scaled * scaled / 100.0;
 	double output = curved * speed / 100.0;
@@ -213,6 +213,18 @@ void DiscardGamepadCursorPosition()
 	_has_saved_gamepad_cursor = false;
 }
 
+	/** Read one physical stick through invert, deadzone and speed options. */
+static void ApplyConfiguredStick(size_t x_step, size_t y_step, ControllerAxisGroup group, int base_speed, int &out_x, int &out_y)
+{
+	int x = GetControllerMappingAxisValue(x_step);
+	int y = GetControllerMappingAxisValue(y_step);
+	if (GetControllerAxisInvert(x_step)) x = -x;
+	if (GetControllerAxisInvert(y_step)) y = -y;
+
+	int speed = base_speed * GetControllerSpeedMultiplier(GetControllerStickSpeed(group)) / 100;
+	ApplyGamepadStickResponse(x, y, GetControllerDeadzone(group), speed, out_x, out_y);
+}
+
 void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
@@ -224,10 +236,29 @@ void HandleGamepadActions()
 
 	/* Left stick is a direct crosshair. Sliders stay on cursor control for C5. */
 	static constexpr int CROSSHAIR_SPEED = 12; // pixels per tick at full deflection
+	static constexpr int PAN_SPEED = 12; // pixels per tick at full deflection
 	int delta_x = 0;
 	int delta_y = 0;
-	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_LSTICK_X),
-			GetControllerMappingAxisValue(GAP_LSTICK_Y), CROSSHAIR_SPEED, delta_x, delta_y);
+	int pan_x = 0;
+	int pan_y = 0;
+	int left_x = 0;
+	int left_y = 0;
+	int right_x = 0;
+	int right_y = 0;
+	ApplyConfiguredStick(GAP_LSTICK_X, GAP_LSTICK_Y, ControllerAxisGroup::LeftStick, CROSSHAIR_SPEED, left_x, left_y);
+	ApplyConfiguredStick(GAP_RSTICK_X, GAP_RSTICK_Y, ControllerAxisGroup::RightStick, PAN_SPEED, right_x, right_y);
+	if (GetControllerStickSwap()) {
+		int temp_x = left_x;
+		int temp_y = left_y;
+		left_x = right_x;
+		left_y = right_y;
+		right_x = temp_x;
+		right_y = temp_y;
+	}
+	delta_x = left_x;
+	delta_y = left_y;
+	pan_x = right_x;
+	pan_y = right_y;
 	if (delta_x != 0 || delta_y != 0) {
 		RestoreGamepadCursorPosition();
 		MoveGamepadCursor(delta_x, delta_y);
@@ -237,11 +268,6 @@ void HandleGamepadActions()
 
 	/* Right stick pans the main viewport. It is independent of focus and the left-stick
 	 * crosshair, so a build window can stay focused while the map moves. */
-	static constexpr int PAN_SPEED = 12; // pixels per tick at full deflection
-	int pan_x = 0;
-	int pan_y = 0;
-	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_RSTICK_X),
-			GetControllerMappingAxisValue(GAP_RSTICK_Y), PAN_SPEED, pan_x, pan_y);
 	if (pan_x != 0 || pan_y != 0) {
 		HandleJoystickScroll({pan_x, pan_y});
 		_input_source = InputSource::Gamepad;
@@ -260,8 +286,9 @@ void HandleGamepadActions()
 	UpdateModifiers(active);
 
 	/* L3 pauses on its own; R3 alone toggles fast forward. */
-	bool pause_edge = edge[GAP_LSTICK];
-	bool fastforward_edge = edge[GAP_RSTICK];
+	bool swap_sticks = GetControllerStickSwap();
+	bool pause_edge = edge[swap_sticks ? GAP_RSTICK : GAP_LSTICK];
+	bool fastforward_edge = edge[swap_sticks ? GAP_LSTICK : GAP_RSTICK];
 	/* One zoom step per press; the keyboard hotkeys handle their own auto-repeat. */
 	bool zoom_in_edge = edge[GAP_RTRIGGER];
 	bool zoom_out_edge = edge[GAP_LTRIGGER];

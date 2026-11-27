@@ -400,6 +400,7 @@ void SetGamepadSelection(int index)
 {
 	if (index < -1 || index >= static_cast<int>(_gamepad_slots.size())) return;
 	_gamepad_selection = index;
+	LoadControllerOptions();
 	ClearGamepadLiveState();
 }
 

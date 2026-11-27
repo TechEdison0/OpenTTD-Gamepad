@@ -38,6 +38,62 @@ enum class ControllerInputEventType : uint8_t {
 	AxisMotion, ///< an axis moved.
 };
 
+	/** Speed preset for one physical stick. */
+enum class ControllerAxisSpeed : uint8_t {
+	Slow,   ///< Half the default rate.
+	Normal, ///< Current C4 rate.
+	Fast,   ///< Double the default rate.
+};
+
+/** Configurable axis groups. */
+enum class ControllerAxisGroup : uint8_t {
+	LeftStick,   ///< Left stick X/Y pair.
+	RightStick,  ///< Right stick X/Y pair.
+	LeftTrigger, ///< Left trigger.
+	RightTrigger,///< Right trigger.
+};
+
+/** Per-controller options persisted beside the mapping list. */
+struct ControllerOptions {
+	bool invert_left_x = false;       ///< Invert left stick X.
+	bool invert_left_y = false;       ///< Invert left stick Y.
+	bool invert_right_x = false;      ///< Invert right stick X.
+	bool invert_right_y = false;      ///< Invert right stick Y.
+	bool invert_left_trigger = false; ///< Invert left trigger actuation.
+	bool invert_right_trigger = false;///< Invert right trigger actuation.
+	uint8_t deadzone_left_stick = 15;   ///< Left stick deadzone in percent.
+	uint8_t deadzone_right_stick = 15;  ///< Right stick deadzone in percent.
+	uint8_t deadzone_left_trigger = 15; ///< Left trigger deadzone in percent.
+	uint8_t deadzone_right_trigger = 15;///< Right trigger deadzone in percent.
+	bool swap_sticks = false;              ///< Swap stick axes and stick clicks.
+	ControllerAxisSpeed left_stick_speed = ControllerAxisSpeed::Normal;  ///< Left stick rate preset.
+	ControllerAxisSpeed right_stick_speed = ControllerAxisSpeed::Normal; ///< Right stick rate preset.
+};
+
+/** Options of the currently selected controller. */
+ControllerOptions &GetControllerOptions();
+
+/** Reload options for the current selection from controller.cfg. */
+void LoadControllerOptions();
+
+/** Whether a mapping step is inverted by the current controller options. */
+bool GetControllerAxisInvert(size_t step);
+
+/** Deadzone percentage for one configurable axis group. */
+uint8_t GetControllerDeadzone(ControllerAxisGroup group);
+
+/** Deadzone percentage for a mapping step. */
+uint8_t GetControllerDeadzoneForStep(size_t step);
+
+/** Speed preset for one physical stick. */
+ControllerAxisSpeed GetControllerStickSpeed(ControllerAxisGroup group);
+
+/** Integer speed multiplier percentage: 50, 100 or 200. */
+int GetControllerSpeedMultiplier(ControllerAxisSpeed speed);
+
+/** Whether stick axes and stick clicks are swapped. */
+bool GetControllerStickSwap();
+
 /** One captured control: which physical input it is, plus its calibration. */
 struct MappingValue {
 	MappingKind kind = MappingKind::None;

@@ -34,6 +34,9 @@ std::string _controller_file;
 /** Last action result, surfaced in the Controller window status line. */
 static std::string _controller_status;
 
+/** Current controller options, loaded with the selected controller. */
+static ControllerOptions _controller_options;
+
 /** Step kinds accepted by the capture flow. */
 enum MappingStepFlag : uint8_t {
 	MAPPING_STEP_BUTTON  = 0, ///< digital button only.
@@ -263,6 +266,119 @@ static MappingValue ParseMappingValue(const std::string &text, uint8_t step_flag
 }
 
 /** Description of a captured value for the window's mapping list. */
+	/** Read a tolerant integer option from an INI group. */
+static int ReadIniInt(const IniGroup *group, const char *key, int fallback)
+{
+	if (group == nullptr) return fallback;
+	const IniItem *item = group->GetItem(key);
+	if (item == nullptr || !item->value.has_value()) return fallback;
+	return static_cast<int>(ParseMappingNumber(*item->value));
+}
+
+/** Read a boolean option from an INI group. */
+static bool ReadIniBool(const IniGroup *group, const char *key, bool fallback)
+{
+	if (group == nullptr) return fallback;
+	const IniItem *item = group->GetItem(key);
+	if (item == nullptr || !item->value.has_value()) return fallback;
+	std::string value = *item->value;
+	return value == "1" || value == "true" || value == "yes";
+}
+
+/** Read a speed preset from an INI group. */
+static ControllerAxisSpeed ReadIniSpeed(const IniGroup *group, const char *key)
+{
+	int value = std::clamp(ReadIniInt(group, key, static_cast<int>(ControllerAxisSpeed::Normal)), 0, 2);
+	return static_cast<ControllerAxisSpeed>(value);
+}
+
+void LoadControllerOptions()
+{
+	_controller_options = ControllerOptions{};
+	int index = GetGamepadSelection();
+	if (index < 0 || static_cast<size_t>(index) >= GetGamepadCount()) return;
+
+	IniFile ini{};
+	ini.LoadFromDisk(_controller_file, Subdirectory::None);
+	std::string section = "controller." + GetGamepadInfo(static_cast<size_t>(index)).guid;
+	const IniGroup *device = ini.GetGroup(section);
+	if (device == nullptr) return;
+
+	_controller_options.invert_left_x = ReadIniBool(device, "invert_leftx", false);
+	_controller_options.invert_left_y = ReadIniBool(device, "invert_lefty", false);
+	_controller_options.invert_right_x = ReadIniBool(device, "invert_rightx", false);
+	_controller_options.invert_right_y = ReadIniBool(device, "invert_righty", false);
+	_controller_options.invert_left_trigger = ReadIniBool(device, "invert_ltrigger", false);
+	_controller_options.invert_right_trigger = ReadIniBool(device, "invert_rtrigger", false);
+	_controller_options.deadzone_left_stick = std::clamp(ReadIniInt(device, "deadzone_lstick", 15), 0, 100);
+	_controller_options.deadzone_right_stick = std::clamp(ReadIniInt(device, "deadzone_rstick", 15), 0, 100);
+	_controller_options.deadzone_left_trigger = std::clamp(ReadIniInt(device, "deadzone_ltrigger", 15), 0, 100);
+	_controller_options.deadzone_right_trigger = std::clamp(ReadIniInt(device, "deadzone_rtrigger", 15), 0, 100);
+	_controller_options.swap_sticks = ReadIniBool(device, "swap_sticks", false);
+	_controller_options.left_stick_speed = ReadIniSpeed(device, "speed_lstick");
+	_controller_options.right_stick_speed = ReadIniSpeed(device, "speed_rstick");
+}
+
+ControllerOptions &GetControllerOptions()
+{
+	return _controller_options;
+}
+
+bool GetControllerAxisInvert(size_t step)
+{
+	if (step >= _mapping_steps.size()) return false;
+	const std::string &key = _mapping_steps[step].key;
+	if (key == "leftx") return _controller_options.invert_left_x;
+	if (key == "lefty") return _controller_options.invert_left_y;
+	if (key == "rightx") return _controller_options.invert_right_x;
+	if (key == "righty") return _controller_options.invert_right_y;
+	if (key == "lefttrigger") return _controller_options.invert_left_trigger;
+	if (key == "righttrigger") return _controller_options.invert_right_trigger;
+	return false;
+}
+
+uint8_t GetControllerDeadzone(ControllerAxisGroup group)
+{
+	switch (group) {
+		case ControllerAxisGroup::LeftStick:   return _controller_options.deadzone_left_stick;
+		case ControllerAxisGroup::RightStick:  return _controller_options.deadzone_right_stick;
+		case ControllerAxisGroup::LeftTrigger: return _controller_options.deadzone_left_trigger;
+		case ControllerAxisGroup::RightTrigger:return _controller_options.deadzone_right_trigger;
+	}
+	return 15;
+}
+
+uint8_t GetControllerDeadzoneForStep(size_t step)
+{
+	if (step >= _mapping_steps.size()) return 15;
+	const std::string &key = _mapping_steps[step].key;
+	if (key == "leftx" || key == "lefty") return GetControllerDeadzone(ControllerAxisGroup::LeftStick);
+	if (key == "rightx" || key == "righty") return GetControllerDeadzone(ControllerAxisGroup::RightStick);
+	if (key == "lefttrigger") return GetControllerDeadzone(ControllerAxisGroup::LeftTrigger);
+	if (key == "righttrigger") return GetControllerDeadzone(ControllerAxisGroup::RightTrigger);
+	return 15;
+}
+
+ControllerAxisSpeed GetControllerStickSpeed(ControllerAxisGroup group)
+{
+	return group == ControllerAxisGroup::RightStick ? _controller_options.right_stick_speed : _controller_options.left_stick_speed;
+}
+
+int GetControllerSpeedMultiplier(ControllerAxisSpeed speed)
+{
+	switch (speed) {
+		case ControllerAxisSpeed::Slow:   return 50;
+		case ControllerAxisSpeed::Normal: return 100;
+		case ControllerAxisSpeed::Fast:   return 200;
+	}
+	return 100;
+}
+
+bool GetControllerStickSwap()
+{
+	return _controller_options.swap_sticks;
+}
+
 static std::string DescribeMappingValue(const MappingValue &value)
 {
 	switch (value.kind) {
@@ -290,6 +406,21 @@ static void WriteConfigFile(const std::string &selected_guid,
 		for (size_t i = 0; i < _mapping_steps.size(); i++) {
 			device.GetOrCreateItem(_mapping_steps[i].key).SetValue(FormatMappingValue(values[i]));
 		}
+
+		const ControllerOptions &opt = _controller_options;
+		device.GetOrCreateItem("invert_leftx").SetValue(opt.invert_left_x ? "1" : "0");
+		device.GetOrCreateItem("invert_lefty").SetValue(opt.invert_left_y ? "1" : "0");
+		device.GetOrCreateItem("invert_rightx").SetValue(opt.invert_right_x ? "1" : "0");
+		device.GetOrCreateItem("invert_righty").SetValue(opt.invert_right_y ? "1" : "0");
+		device.GetOrCreateItem("invert_ltrigger").SetValue(opt.invert_left_trigger ? "1" : "0");
+		device.GetOrCreateItem("invert_rtrigger").SetValue(opt.invert_right_trigger ? "1" : "0");
+		device.GetOrCreateItem("deadzone_lstick").SetValue(fmt::format("{}", opt.deadzone_left_stick));
+		device.GetOrCreateItem("deadzone_rstick").SetValue(fmt::format("{}", opt.deadzone_right_stick));
+		device.GetOrCreateItem("deadzone_ltrigger").SetValue(fmt::format("{}", opt.deadzone_left_trigger));
+		device.GetOrCreateItem("deadzone_rtrigger").SetValue(fmt::format("{}", opt.deadzone_right_trigger));
+		device.GetOrCreateItem("swap_sticks").SetValue(opt.swap_sticks ? "1" : "0");
+		device.GetOrCreateItem("speed_lstick").SetValue(fmt::format("{}", static_cast<int>(opt.left_stick_speed)));
+		device.GetOrCreateItem("speed_rstick").SetValue(fmt::format("{}", static_cast<int>(opt.right_stick_speed)));
 	}
 
 	bool saved = ini.SaveToDisk(_controller_file);
@@ -386,6 +517,7 @@ int LoadControllerConfig()
 		}
 	}
 	SetGamepadSelection(index);
+	LoadControllerOptions();
 	_controller_status = fmt::format("loaded {} (index {})", _controller_file, index);
 
 	/* Parse any stored mappings; missing keys simply stay unset. */

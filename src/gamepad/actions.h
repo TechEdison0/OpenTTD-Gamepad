@@ -35,8 +35,8 @@ InputSource GetInputSource();
 /** Gamepad-contributed modifier state; OR with the keyboard state in the video driver. */
 void GetGamepadModifiers(bool &ctrl, bool &shift);
 
-/** Apply the shared deadzone + exponent response curve to a stick vector. */
-void ApplyGamepadStickResponse(int x, int y, int speed, int &out_x, int &out_y);
+/** Apply a configurable deadzone + exponent response curve to a stick vector. */
+void ApplyGamepadStickResponse(int x, int y, int deadzone, int speed, int &out_x, int &out_y);
 
 /** Move the crosshair by a pixel delta. C3 D-pad snapping reuses this helper. */
 void MoveGamepadCursor(int delta_x, int delta_y);

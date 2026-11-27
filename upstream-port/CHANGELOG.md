@@ -45,9 +45,6 @@ file records only what this fork adds.
 - D-pad focus is confined to the active window until B closes it, so modal/new-game windows
   and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
 - Focus still transfers to a newly opened window after A activation.
-- Selecting a dropdown row watches that specific dropdown until its delayed click closes it,
-  then moves focus into the resulting build submenu. The watcher is cancelled by B,
-  left-stick movement, or real mouse/touch input.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

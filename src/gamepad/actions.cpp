@@ -215,8 +215,6 @@ void HandleGamepadActions()
 {
 	if (GetGamepadSelection() < 0) return;
 
-	TickDropdownFocusTransfer();
-
 	std::array<bool, 18> active = {};
 	for (size_t i = 0; i < active.size(); i++) {
 		active[i] = IsControllerMappingControlActive(i);

@@ -11,6 +11,7 @@
 #include "core/backup_type.hpp"
 #include "dropdown_type.h"
 #include "dropdown_func.h"
+#include "gamepad/focus.h"
 #include "stringfilter_type.h"
 #include "querystring_gui.h"
 #include "strings_func.h"
@@ -450,6 +451,7 @@ struct DropdownWindow : Window {
 			 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
 			if (!this->options.Test(DropDownOption::Persist)) this->Close();
 			this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
+			NotifyGamepadDropdownSelectionCompleted();
 			return;
 		}
 

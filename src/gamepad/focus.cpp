@@ -24,6 +24,7 @@
 
 static Window *_gamepad_focus_window = nullptr;
 static WidgetID _gamepad_focus_widget = -1;
+static bool _gamepad_dropdown_selection_pending = false;
 
 /** Candidate used by one D-pad movement. Rectangles are in screen coordinates. */
 struct FocusCandidate {
@@ -108,6 +109,7 @@ void ClearGamepadFocus()
 	MarkFocusDirty();
 	_gamepad_focus_window = nullptr;
 	_gamepad_focus_widget = -1;
+	_gamepad_dropdown_selection_pending = false;
 }
 
 /** Collect candidates from one window. Dropdown items are individual candidates. */
@@ -305,6 +307,7 @@ void ActivateGamepadFocus()
 	if (!GetGamepadFocus(w, widget)) return;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
+		MarkGamepadDropdownSelection();
 		ActivateDropdownFocusItem(w, widget);
 		return;
 	}
@@ -330,6 +333,24 @@ void UpdateGamepadFocusAfterActivation()
 		return;
 	}
 	if (front == _gamepad_focus_window && _gamepad_focus_widget >= 0) return;
+
+	auto candidates = CollectWindowCandidates(front);
+	const FocusCandidate *first = FirstCandidate(candidates);
+	if (first != nullptr) SetFocus(*first);
+}
+
+void MarkGamepadDropdownSelection()
+{
+	_gamepad_dropdown_selection_pending = true;
+}
+
+void NotifyGamepadDropdownSelectionCompleted()
+{
+	if (!_gamepad_dropdown_selection_pending) return;
+	_gamepad_dropdown_selection_pending = false;
+
+	Window *front = FrontWindowWithCandidates();
+	if (front == nullptr) return;
 
 	auto candidates = CollectWindowCandidates(front);
 	const FocusCandidate *first = FirstCandidate(candidates);

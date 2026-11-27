@@ -34,6 +34,12 @@ void ActivateGamepadFocus();
 /** After activation, transfer focus to a newly opened window if one appeared. */
 void UpdateGamepadFocusAfterActivation();
 
+/** Mark that a gamepad activation selected a dropdown row. */
+void MarkGamepadDropdownSelection();
+
+/** Focus the window opened by a gamepad dropdown selection. */
+void NotifyGamepadDropdownSelectionCompleted();
+
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();
 

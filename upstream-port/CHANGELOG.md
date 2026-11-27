@@ -48,11 +48,13 @@ file records only what this fork adds.
 - Gamepad dropdown focus now disables OpenTTD's cursor-driven `drag_mode` and no longer snaps
   the real cursor onto rows during D-pad navigation. This stops dropdowns from auto-committing
   the top-left row before the player activates one.
-- Gamepad dropdown selections hook the normal selection callback and compare the z-order front
-  window immediately before and after the callback. The exact newly opened window is forced into
-  gamepad focus instead of relying on a z-order guess; when no window opens, focus returns to the
-  dropdown's parent button. A completed gamepad-originated selection transfers focus to the
-  newly opened window above the dropdown's parent toolbar;
+- Gamepad focus transfer now identifies newly created windows by comparing the live window set
+  before and after activation. Toolbar-aligned build/list windows have lower z-priority than the
+  main toolbar, so z-order scanning could never find them; creation-based detection does.
+- Gamepad dropdown selections hook the normal selection callback and focus the exact window
+  created by that callback. When no window opens, focus returns to the dropdown's parent button.
+  A completed gamepad-originated selection transfers focus to the newly opened window above the
+  dropdown's parent toolbar;
   persistent dropdowns do not transfer. Toggle-only dropdowns return focus to the parent button.
   This covers all toolbar dropdowns: settings, save/load, small map, lists, rail/road/tram,
   docks, air, trees/landscaping, music, messages and help.
@@ -62,6 +64,8 @@ file records only what this fork adds.
   `WWT_PANEL` and `WWT_INSET` containers are no longer focus candidates.
 - B/back restores the saved crosshair position, and each new D-pad session captures the current
   position instead of retaining a stale one.
+- The last focused D-pad item is remembered per window/widget. Returning from left-stick
+  crosshair control resumes D-pad navigation at that item instead of the first candidate.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

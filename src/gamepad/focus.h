@@ -39,7 +39,7 @@ void FocusGamepadWindow(Window *w);
 
 /** Focus the window opened by a gamepad dropdown selection. */
 void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button,
-		bool dropdown_closed, Window *front_before, Window *front_after);
+		bool dropdown_closed, Window *opened_window);
 
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();

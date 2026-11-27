@@ -58,6 +58,8 @@ file records only what this fork adds.
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.
 - The main toolbar save button (`WWT_IMGBTN_2`) is now focusable like the other toolbar buttons.
+- Controller Guide text clarified: X temporarily hides the tooltip, Y cancels, and tooltip
+  closing is listed separately. The guide window height was reduced to remove unused space.
 - Crosshair position is saved when D-pad focus takes over and restored before left-stick
   movement resumes; real mouse/touch activity discards the saved position.
 - Left-stick movement leaves focus mode and restores A as a held left click. Keyboard,

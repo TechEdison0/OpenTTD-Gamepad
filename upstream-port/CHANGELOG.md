@@ -1,7 +1,17 @@
-# Changelog — OpenTTD-Gamepad fork
+# Changelog — OpenTTD-Handheld fork
 
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
+
+## 2026-11-27 — `v1.0` (release branch)
+
+- Project rebranded to OpenTTD-Handheld; Android package namespace is now
+  `net.techedison.openttd`.
+- Android release builds are signed with a project-specific release keystore stored only
+  in local `build_keys/`; the debug signing fallback remains for local builds.
+- `1.x` is the v1.x release branch. Fixes made there are merged back to `main`.
+- Windows v1.0 packages ship unsigned with documented SmartScreen/Smart App Control
+  warnings; no self-signed certificate is used.
 
 ## 2026-11-27 — `v20261127-c6-axis-configuration-menu` (C6 complete)
 

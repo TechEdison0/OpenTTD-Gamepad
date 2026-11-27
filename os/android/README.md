@@ -1,6 +1,6 @@
-## OpenTTD Gamepad — Android
+## OpenTTD Handheld — Android
 
-This directory holds the Android application project for the OpenTTD Gamepad fork:
+This directory holds the Android application project for the OpenTTD Handheld fork:
 the Gradle/NDK/vcpkg build, the SDL Java glue, and the app activities.
 
 The game keeps the full desktop interface. Input:
@@ -25,7 +25,7 @@ The game keeps the full desktop interface. Input:
   `research/` for the controller model and layout plans.
 
 Savegames, scenarios, the configuration and downloaded content are stored in
-`Android/data/org.openttd.android/files/openttd/` on the device storage, which is
+`Android/data/net.techedison.openttd/files/openttd/` on the device storage, which is
 accessible over USB, so files can be copied in and out. On first start the app
 offers to use an `OpenTTD` folder in the root of the device storage instead, which
 file managers can reach and which survives uninstalling. Any other folder can be
@@ -84,7 +84,7 @@ signed with the same key.
 The game logs to logcat under the `OpenTTD` tag. Command line arguments can be
 passed through an intent extra, e.g. for more driver output:
 ```
-adb shell am start -n org.openttd.android/.LauncherActivity --es args "'-d driver=3'"
+adb shell am start -n net.techedison.openttd/.LauncherActivity --es args "'-d driver=3'"
 ```
 
 ### Rendering

@@ -5,7 +5,7 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-package org.openttd.android;
+package net.techedison.openttd;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -59,7 +59,7 @@ public class OpenTTDActivity extends SDLActivity {
 
     /**
      * Command line arguments for OpenTTD can be passed for debugging, e.g.
-     * {@code adb shell am start -n org.openttd.android/.LauncherActivity --es args "-d driver=3"}.
+     * {@code adb shell am start -n net.techedison.openttd/.LauncherActivity --es args "-d driver=3"}.
      * <p>
      * The bundled General-MIDI soundfont is appended as a driver parameter so the
      * FluidSynth music driver can load it on Android, where there is no system font.

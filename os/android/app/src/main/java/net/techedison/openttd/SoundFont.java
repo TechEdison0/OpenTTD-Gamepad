@@ -5,7 +5,7 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://opensource.org/licenses/GPL-2.0>.
  */
 
-package org.openttd.android;
+package net.techedison.openttd;
 
 import android.content.Context;
 

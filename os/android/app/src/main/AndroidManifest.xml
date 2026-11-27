@@ -30,7 +30,7 @@
         android:isGame="true">
 
         <activity
-            android:name="org.openttd.android.LauncherActivity"
+            android:name="net.techedison.openttd.LauncherActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
             android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation">
@@ -43,20 +43,20 @@
         </activity>
 
         <activity
-            android:name="org.openttd.android.StorageActivity"
+            android:name="net.techedison.openttd.StorageActivity"
             android:exported="true"
             android:label="@string/app_settings_title"
-            android:taskAffinity="org.openttd.android.storage"
+            android:taskAffinity="net.techedison.openttd.storage"
             android:theme="@style/StorageTheme" />
 
         <activity
-            android:name="org.openttd.android.RestartActivity"
+            android:name="net.techedison.openttd.RestartActivity"
             android:exported="false"
             android:process=":restart"
             android:theme="@android:style/Theme.NoDisplay" />
 
         <activity
-            android:name="org.openttd.android.OpenTTDActivity"
+            android:name="net.techedison.openttd.OpenTTDActivity"
             android:exported="false"
             android:launchMode="singleInstance"
             android:screenOrientation="sensorLandscape"

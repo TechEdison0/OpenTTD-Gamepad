@@ -51,18 +51,18 @@ val vcpkgInstalledDir: File = setting("vcpkg.installed.dir", "VCPKG_INSTALLED_DI
     ?: layout.buildDirectory.dir("vcpkg_installed").get().asFile
 
 android {
-    namespace = "org.openttd.android"
+    namespace = "net.techedison.openttd"
     compileSdk = 36
     ndkVersion = "29.0.14206865"
 
     defaultConfig {
-        applicationId = "org.openttd.android"
+        applicationId = "net.techedison.openttd"
         minSdk = 28
         targetSdk = 36
         versionCode = commitCount
         versionName = setting("openttd.versionName", "OPENTTD_VERSION_NAME") ?: "$openttdVersion-android"
         if (nightly) applicationIdSuffix = ".nightly"
-        resValue("string", "app_name", if (nightly) "OpenTTD Touch Nightly" else "OpenTTD Touch")
+        resValue("string", "app_name", if (nightly) "OpenTTD Handheld Nightly" else "OpenTTD Handheld")
 
         ndk {
             abiFilters += abis

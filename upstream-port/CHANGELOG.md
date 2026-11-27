@@ -3,6 +3,15 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-27 — C4 right-stick viewport pan (in progress)
+
+- Right-stick axes now pan the main viewport through the existing `HandleJoystickScroll()`
+  path using the shared 15% radial deadzone and gamma-2 response curve.
+- Viewport pan is independent of D-pad focus and the left-stick crosshair: both sticks can
+  be used together while a build window keeps focus.
+- The Controller Guide now describes right-stick axes as `Pan viewport` instead of a
+  C2 placeholder.
+
 ## 2026-11-26 — C1 bugfix: explicit axis calibration gesture (released in `v20261126-c2-action-layer`)
 
 - Mapping now starts with only the **Press A** step visible. After A is mapped, a prompt

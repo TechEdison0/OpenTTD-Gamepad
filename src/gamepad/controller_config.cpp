@@ -73,7 +73,7 @@ static constexpr std::array<MappingStepDef, 18> _mapping_steps = {{
 
 /**
  * Hardcoded in-game function of each mapping slot (C1f). The controller remapping only
- * decides which physical control feeds a slot; C4 right-stick pan is still a placeholder.
+ * decides which physical control feeds a slot.
  */
 static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descriptions = {{
 	"Left click / hold-drag",
@@ -90,8 +90,8 @@ static constexpr std::array<const char *, _mapping_steps.size()> _mapping_descri
 	"Focus right",
 	"Crosshair (C2)",
 	"Crosshair (C2)",
-	"Pan (C2 placeholder)",
-	"Pan (C2 placeholder)",
+	"Pan viewport",
+	"Pan viewport",
 	"Zoom (C2)",
 	"Zoom (C2)",
 }};

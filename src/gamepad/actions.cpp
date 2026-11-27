@@ -26,7 +26,7 @@
 /** Mapping slots used by the C2 action dispatch. */
 enum GamepadActionStep : size_t {
 	GAP_A       = 0,  ///< Primary activate.
-	GAP_B       = 1,  ///< Placeholder until C3 focus exists.
+	GAP_B       = 1,  ///< Close focused window.
 	GAP_X       = 2,  ///< Secondary activate.
 	GAP_Y       = 3,  ///< Cancel tool / abort build.
 	GAP_LSHOULDER = 4, ///< Held Ctrl modifier.
@@ -41,6 +41,8 @@ enum GamepadActionStep : size_t {
 	GAP_RTRIGGER = 17, ///< RT, zoom in.
 	GAP_LSTICK_X = 12, ///< Left stick horizontal, crosshair.
 	GAP_LSTICK_Y = 13, ///< Left stick vertical, crosshair.
+	GAP_RSTICK_X = 14, ///< Right stick horizontal, viewport pan.
+	GAP_RSTICK_Y = 15, ///< Right stick vertical, viewport pan.
 };
 
 static InputSource _input_source = InputSource::KeyboardMouse;
@@ -220,8 +222,7 @@ void HandleGamepadActions()
 		active[i] = IsControllerMappingControlActive(i);
 	}
 
-	/* Left stick is a direct crosshair. C4 will call the same response helper for
-	 * right-stick pan. */
+	/* Left stick is a direct crosshair. */
 	static constexpr int CROSSHAIR_SPEED = 12; // pixels per tick at full deflection
 	int delta_x = 0;
 	int delta_y = 0;
@@ -231,6 +232,18 @@ void HandleGamepadActions()
 		RestoreGamepadCursorPosition();
 		MoveGamepadCursor(delta_x, delta_y);
 		ClearGamepadFocus();
+		_input_source = InputSource::Gamepad;
+	}
+
+	/* Right stick pans the main viewport. It is independent of focus and the left-stick
+	 * crosshair, so a build window can stay focused while the map moves. */
+	static constexpr int PAN_SPEED = 12; // pixels per tick at full deflection
+	int pan_x = 0;
+	int pan_y = 0;
+	ApplyGamepadStickResponse(GetControllerMappingAxisValue(GAP_RSTICK_X),
+			GetControllerMappingAxisValue(GAP_RSTICK_Y), PAN_SPEED, pan_x, pan_y);
+	if (pan_x != 0 || pan_y != 0) {
+		HandleJoystickScroll({pan_x, pan_y});
 		_input_source = InputSource::Gamepad;
 	}
 

@@ -147,7 +147,16 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C5 navigation refinements
+### Current release — C6 axis configuration menu
+
+`v20261127-c6-axis-configuration-menu` adds per-controller axis configuration. The
+controller menu is now a vertical stack with Guide, Controllers & Mapping and Controller
+Options. Invert toggles, deadzone percentages, slow/normal/fast stick speeds and stick
+swap are stored per controller in `controller.cfg` and applied by the input pipeline.
+Rows in the options window are gamepad-focusable. The maintainer verified all functions
+on Linux x86_64, Windows/Wine and Android Galaxy S25 Ultra.
+
+### Previous release — C5 navigation refinements
 
 `v20261127-c5-navigation-refinements` refines controller navigation for specific widgets
 and edge cases. Town Directory town rows are focusable and activate with A, and road/rail
@@ -223,6 +232,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261127-c6-axis-configuration-menu` | C6 controller options: per-controller invert, deadzone, stick speed and stick swap |
 | `v20261127-c5-navigation-refinements` | C5 navigation refinements: town rows, station direction panels, picker sub-window focus |
 | `v20261127-c4-viewport-movement` | C4 right-stick viewport pan, independent of D-pad focus and left-stick placement |
 | `v20261127-c3-controller-focus` | C3 focus navigation: red widget ring, D-pad window/dropdown navigation, focused A activation, B close, crosshair handoff |

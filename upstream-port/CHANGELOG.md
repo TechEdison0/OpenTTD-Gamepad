@@ -3,24 +3,37 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-27 — C6 controller options (in progress)
+## 2026-11-27 — `v20261127-c6-axis-configuration-menu` (C6 complete)
 
-- Added per-controller invert, deadzone, stick-swap and stick-speed settings to the
-  options model and config persistence.
-- Runtime stick handling now applies invert, configurable radial deadzone and speed
-  presets before the response curve.
-- Stick swap exchanges both axis pairs and the L3/R3 pause/fast-forward actions.
-- Defaults preserve current C4 behavior: no invert, no swap, normal speed.
-- Controller main menu is now a vertical stack with Guide, Controllers & Mapping and
+Controller-facing axis configuration: invert, deadzone, speed and stick swap, persisted
+per controller.
+
+### What's in it
+
+- Per-controller invert, deadzone, stick-swap and stick-speed settings are stored in
+  `controller.cfg` and applied in the input pipeline.
+- The controller menu is a vertical stack with Guide, Controllers & Mapping and
   Controller Options.
-- Controller Options exposes toggles for invert and swap, percentage text entry for
-  deadzones, and slow/normal/fast dropdowns per stick. Rows are gamepad-focusable.
+- Controller Options exposes invert and swap toggles, percentage deadzone entry and
+  slow/normal/fast dropdowns per stick. Rows are gamepad-focusable.
+- Stick swap exchanges both axis pairs and the L3/R3 pause/fast-forward actions.
+- Defaults preserve prior behavior: no invert, no swap, normal speed, 15% stick and 25%
+  trigger deadzones.
+
+### Fixed
+
+- Speed dropdowns no longer crash when selecting Fast; they open through an explicit row
+  anchor instead of treating the custom canvas as a dropdown button widget.
+- Main-menu background focus is suppressed only while a foreground dialog or dropdown is
+  open, so New Game options keep D-pad focus. Other background windows remain reachable.
 - Controller diagnostics window follows the current dark panel/caption-string style and
   remains toggleable by build flag, compiled off by default.
-- Speed dropdowns now open through an explicit row anchor instead of treating the custom
-  canvas as a dropdown button widget.
-- Main-menu background window is suppressed for D-pad focus whenever a foreground dialog
-  is open. Other background windows remain focusable.
+
+### Verified
+
+Compiled and manually tested on Linux x86_64, Windows x86_64 under Wine and Android
+arm64-v8a on a Samsung Galaxy S25 Ultra. The maintainer reported all C6 functions working
+on all three targets.
 
 ## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 

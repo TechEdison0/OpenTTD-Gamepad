@@ -11,7 +11,6 @@
 #include "core/backup_type.hpp"
 #include "dropdown_type.h"
 #include "dropdown_func.h"
-#include "gamepad/focus.h"
 #include "stringfilter_type.h"
 #include "querystring_gui.h"
 #include "strings_func.h"
@@ -449,25 +448,8 @@ struct DropdownWindow : Window {
 		if (this->click_delay != 0 && --this->click_delay == 0) {
 			/* Close the dropdown, so it doesn't affect new window placement.
 			 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
-			Window *dropdown_parent = this->parent;
-			WidgetID dropdown_button = this->parent_button;
-			bool dropdown_closed = !this->options.Test(DropDownOption::Persist);
-
-			std::vector<Window *> windows_before;
-			for (Window *w : Window::IterateFromFront()) windows_before.push_back(w);
-
-			if (dropdown_closed) this->Close();
-			dropdown_parent->OnDropdownSelect(dropdown_button, this->selected_result, this->selected_click_result);
-
-			Window *opened_window = nullptr;
-			for (Window *w : Window::IterateFromFront()) {
-				if (std::find(windows_before.begin(), windows_before.end(), w) != windows_before.end()) continue;
-				opened_window = w;
-				break;
-			}
-
-			NotifyGamepadDropdownSelectionCompleted(dropdown_parent, dropdown_button,
-					dropdown_closed, opened_window);
+			if (!this->options.Test(DropDownOption::Persist)) this->Close();
+			this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
 			return;
 		}
 

@@ -2,9 +2,6 @@
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, version 2.
- * OpenTTD is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD.
  * If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
@@ -18,7 +15,6 @@
 #include "../widget_type.h"
 #include "../gfx_func.h"
 
-#include <algorithm>
 #include <vector>
 
 #include "../safeguards.h"
@@ -27,16 +23,6 @@ static Window *_gamepad_focus_window = nullptr;
 static WidgetID _gamepad_focus_widget = -1;
 static Window *_last_focus_window = nullptr;
 static WidgetID _last_focus_widget = -1;
-
-struct FocusEntry {
-	Window *window;
-	WidgetID widget;
-
-	bool operator!=(const FocusEntry &other) const { return window != other.window || widget != other.widget; }
-};
-static std::vector<FocusEntry> _focus_stack;
-static bool _gamepad_dropdown_selection_pending = false;
-static std::vector<Window *> _windows_before_activation;
 
 /** Candidate used by one D-pad movement. Rectangles are in screen coordinates. */
 struct FocusCandidate {
@@ -96,6 +82,71 @@ static bool FocusWindowAlive(Window *w)
 	return false;
 }
 
+/**
+ * A widget cannot be used if a window in front of it covers its center.
+ * This replaces active-window confinement with ordinary screen geometry:
+ * D-pad navigation can cross windows, but never reaches controls hidden
+ * behind a dialog such as the New Game window.
+ */
+static bool IsPointCovered(Point pt, const Window *owner)
+{
+	for (Window *w : Window::IterateFromFront()) {
+		if (w == owner || IsExcludedFromGamepadFocus(w)) continue;
+		if (w->window_class == WindowClass::ToolTips) continue;
+		if (w->IsShaded()) continue;
+
+		if (pt.x >= w->left && pt.x < w->left + w->width &&
+				pt.y >= w->top && pt.y < w->top + w->height) return true;
+	}
+	return false;
+}
+
+static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, WidgetID widget, Rect rect)
+{
+	if (rect.Width() <= 0 || rect.Height() <= 0) return;
+	Point centre{(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2};
+	if (IsPointCovered(centre, w)) return;
+	candidates.push_back({w, widget, rect});
+}
+
+/** Collect candidates from one window. Dropdown items are individual candidates. */
+static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
+{
+	std::vector<FocusCandidate> candidates;
+	if (IsExcludedFromGamepadFocus(w)) return candidates;
+
+	if (w->window_class == WindowClass::DropdownMenu) {
+		int count = GetDropdownFocusItemCount(w);
+		for (int i = 0; i < count; i++) {
+			AddCandidate(candidates, w, i, GetDropdownFocusItemRect(w, i));
+		}
+		return candidates;
+	}
+
+	for (const auto &pair : w->widget_lookup) {
+		NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
+		if (!IsFocusableWidget(nw)) continue;
+
+		Rect local = nw->GetCurrentRect();
+		int cx = (local.left + local.right) / 2;
+		int cy = (local.top + local.bottom) / 2;
+		if (GetWidgetFromPos(w, cx, cy) != nw->GetIndex()) continue;
+
+		AddCandidate(candidates, w, nw->GetIndex(), local.Translate(w->left, w->top));
+	}
+	return candidates;
+}
+
+static std::vector<FocusCandidate> CollectAllCandidates()
+{
+	std::vector<FocusCandidate> candidates;
+	for (Window *w : Window::IterateFromFront()) {
+		auto window_candidates = CollectWindowCandidates(w);
+		candidates.insert(candidates.end(), window_candidates.begin(), window_candidates.end());
+	}
+	return candidates;
+}
+
 bool IsGamepadFocusActive()
 {
 	if (!FocusWindowAlive(_gamepad_focus_window)) {
@@ -116,136 +167,9 @@ bool GetGamepadFocus(Window *&w, WidgetID &widget)
 
 void ClearGamepadFocus()
 {
-	if (_gamepad_focus_window != nullptr && FocusWindowAlive(_gamepad_focus_window) &&
-			!IsExcludedFromGamepadFocus(_gamepad_focus_window)) {
-		FocusEntry entry{_gamepad_focus_window, _gamepad_focus_widget};
-		if (_focus_stack.empty() || _focus_stack.back() != entry) _focus_stack.push_back(entry);
-	}
-
 	MarkFocusDirty();
 	_gamepad_focus_window = nullptr;
 	_gamepad_focus_widget = -1;
-	_gamepad_dropdown_selection_pending = false;
-}
-
-/** Collect candidates from one window. Dropdown items are individual candidates. */
-static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
-{
-	std::vector<FocusCandidate> candidates;
-	if (IsExcludedFromGamepadFocus(w)) return candidates;
-
-	if (w->window_class == WindowClass::DropdownMenu) {
-		int count = GetDropdownFocusItemCount(w);
-		for (int i = 0; i < count; i++) {
-			candidates.push_back({w, i, GetDropdownFocusItemRect(w, i)});
-		}
-		return candidates;
-	}
-
-	for (const auto &pair : w->widget_lookup) {
-		NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
-		if (!IsFocusableWidget(nw)) continue;
-
-		Rect local = nw->GetCurrentRect();
-		int cx = (local.left + local.right) / 2;
-		int cy = (local.top + local.bottom) / 2;
-		if (GetWidgetFromPos(w, cx, cy) != nw->GetIndex()) continue;
-
-		candidates.push_back({w, nw->GetIndex(), local.Translate(w->left, w->top)});
-	}
-	return candidates;
-}
-
-static Window *FrontWindowWithCandidates()
-{
-	for (Window *w : Window::IterateFromFront()) {
-		if (!CollectWindowCandidates(w).empty()) return w;
-	}
-	return nullptr;
-}
-
-/** Find the front-most eligible window above a known window, excluding it. */
-static Window *FrontWindowAfter(Window *skip)
-{
-	for (Window *w : Window::IterateFromFront()) {
-		if (w == skip) break;
-		if (IsExcludedFromGamepadFocus(w)) continue;
-		if (!CollectWindowCandidates(w).empty()) return w;
-	}
-	return nullptr;
-}
-
-static std::vector<Window *> SnapshotWindows()
-{
-	std::vector<Window *> snapshot;
-	for (Window *w : Window::IterateFromFront()) snapshot.push_back(w);
-	return snapshot;
-}
-
-static Window *FindNewEligibleWindow(const std::vector<Window *> &before)
-{
-	for (Window *w : Window::IterateFromFront()) {
-		if (std::find(before.begin(), before.end(), w) != before.end()) continue;
-		if (IsExcludedFromGamepadFocus(w)) continue;
-		if (!CollectWindowCandidates(w).empty()) return w;
-	}
-	return nullptr;
-}
-
-static bool BuildFocusCandidate(Window *w, WidgetID widget, FocusCandidate &out)
-{
-	if (w == nullptr || !FocusWindowAlive(w) || IsExcludedFromGamepadFocus(w)) return false;
-
-	if (w->window_class == WindowClass::DropdownMenu) {
-		Rect r = GetDropdownFocusItemRect(w, widget);
-		if (r.Width() <= 0 || r.Height() <= 0) return false;
-		out = {w, widget, r};
-		return true;
-	}
-
-	NWidgetCore *nw = w->GetWidget<NWidgetCore>(widget);
-	if (nw == nullptr || !IsFocusableWidget(nw)) return false;
-	Rect local = nw->GetCurrentRect();
-	int cx = (local.left + local.right) / 2;
-	int cy = (local.top + local.bottom) / 2;
-	if (GetWidgetFromPos(w, cx, cy) != widget) return false;
-	out = {w, widget, local.Translate(w->left, w->top)};
-	return true;
-}
-
-static bool FindLastFocusCandidate(FocusCandidate &out)
-{
-	return BuildFocusCandidate(_last_focus_window, _last_focus_widget, out);
-}
-
-static void PruneFocusStack()
-{
-	std::erase_if(_focus_stack, [](const FocusEntry &entry) {
-		return !FocusWindowAlive(entry.window) || IsExcludedFromGamepadFocus(entry.window);
-	});
-}
-
-/** Focus navigation is confined to the active window until B closes it. */
-static void SetFocus(const FocusCandidate &candidate);
-
-static Window *GetActiveFocusWindow()
-{
-	if (FocusWindowAlive(_gamepad_focus_window) &&
-			!IsExcludedFromGamepadFocus(_gamepad_focus_window)) {
-		return _gamepad_focus_window;
-	}
-
-	PruneFocusStack();
-	if (!_focus_stack.empty()) {
-		FocusCandidate candidate{};
-		if (BuildFocusCandidate(_focus_stack.back().window, _focus_stack.back().widget, candidate)) {
-			SetFocus(candidate);
-			return _gamepad_focus_window;
-		}
-	}
-
-	ClearGamepadFocus();
-	return FrontWindowWithCandidates();
 }
 
 static const FocusCandidate *FirstCandidate(const std::vector<FocusCandidate> &candidates)
@@ -340,13 +264,6 @@ static void SnapCursorToFocus()
 
 static void SetFocus(const FocusCandidate &candidate)
 {
-	if (_gamepad_focus_window != nullptr && _gamepad_focus_window != candidate.w &&
-			FocusWindowAlive(_gamepad_focus_window) &&
-			!IsExcludedFromGamepadFocus(_gamepad_focus_window)) {
-		FocusEntry entry{_gamepad_focus_window, _gamepad_focus_widget};
-		if (_focus_stack.empty() || _focus_stack.back() != entry) _focus_stack.push_back(entry);
-	}
-
 	MarkFocusDirty();
 	_gamepad_focus_window = candidate.w;
 	_gamepad_focus_widget = candidate.widget;
@@ -354,35 +271,43 @@ static void SetFocus(const FocusCandidate &candidate)
 	_last_focus_widget = candidate.widget;
 	MarkFocusDirty();
 
-	if (candidate.w->window_class == WindowClass::DropdownMenu) {
-		_gamepad_dropdown_selection_pending = true;
-		SetDropdownDragMode(candidate.w, false);
-	} else {
-		_gamepad_dropdown_selection_pending = false;
-	}
+	if (candidate.w->window_class == WindowClass::DropdownMenu) SetDropdownDragMode(candidate.w, false);
 
 	SetFocusedWindow(candidate.w);
 	SnapCursorToFocus();
+}
+
+static bool FindLastFocusCandidate(FocusCandidate &out)
+{
+	Window *w = _last_focus_window;
+	if (w == nullptr || !FocusWindowAlive(w) || IsExcludedFromGamepadFocus(w)) return false;
+
+	if (w->window_class == WindowClass::DropdownMenu) {
+		Rect r = GetDropdownFocusItemRect(w, _last_focus_widget);
+		if (r.Width() <= 0 || r.Height() <= 0) return false;
+		out = {w, _last_focus_widget, r};
+		return true;
+	}
+
+	NWidgetCore *nw = w->GetWidget<NWidgetCore>(_last_focus_widget);
+	if (nw == nullptr || !IsFocusableWidget(nw)) return false;
+	Rect local = nw->GetCurrentRect();
+	int cx = (local.left + local.right) / 2;
+	int cy = (local.top + local.bottom) / 2;
+	if (GetWidgetFromPos(w, cx, cy) != _last_focus_widget) return false;
+	out = {w, _last_focus_widget, local.Translate(w->left, w->top)};
+	return true;
 }
 
 void MoveGamepadFocus(GamepadFocusDirection direction)
 {
 	if (_gamepad_focus_window == nullptr || !FocusWindowAlive(_gamepad_focus_window)) {
 		SaveGamepadCursorPosition();
-		PruneFocusStack();
-		if (!_focus_stack.empty()) {
-			FocusCandidate candidate{};
-			if (BuildFocusCandidate(_focus_stack.back().window, _focus_stack.back().widget, candidate)) SetFocus(candidate);
-		} else {
-			FocusCandidate last{};
-			if (FindLastFocusCandidate(last)) SetFocus(last);
-		}
+		FocusCandidate last{};
+		if (FindLastFocusCandidate(last)) SetFocus(last);
 	}
 
-	Window *active = GetActiveFocusWindow();
-	if (active == nullptr) return;
-
-	std::vector<FocusCandidate> candidates = CollectWindowCandidates(active);
+	std::vector<FocusCandidate> candidates = CollectAllCandidates();
 	if (candidates.empty()) return;
 
 	Rect current{};
@@ -394,7 +319,7 @@ void MoveGamepadFocus(GamepadFocusDirection direction)
 	const FocusCandidate *best = nullptr;
 	int best_score = INT32_MAX;
 	for (const FocusCandidate &candidate : candidates) {
-		if (have_current && candidate.widget == _gamepad_focus_widget) continue;
+		if (have_current && candidate.w == _gamepad_focus_window && candidate.widget == _gamepad_focus_widget) continue;
 		int score = have_current ? DirectionScore(current, candidate, direction) : INT32_MAX;
 		if (score < best_score) {
 			best_score = score;
@@ -418,25 +343,19 @@ void MoveGamepadFocus(GamepadFocusDirection direction)
 	SetFocus(*best);
 }
 
-Window *ActivateGamepadFocus()
+void ActivateGamepadFocus()
 {
-	_windows_before_activation = SnapshotWindows();
-
 	Window *w = nullptr;
 	WidgetID widget = -1;
-	if (!GetGamepadFocus(w, widget)) {
-		_windows_before_activation.clear();
-		return nullptr;
-	}
+	if (!GetGamepadFocus(w, widget)) return;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
-		_windows_before_activation.clear();
 		ActivateDropdownFocusItem(w, widget);
-		return w;
+		return;
 	}
 
 	NWidgetCore *nw = w->GetWidget<NWidgetCore>(widget);
-	if (nw == nullptr) return nullptr;
+	if (nw == nullptr) return;
 
 	Rect local = nw->GetCurrentRect();
 	if ((nw->type & WWT_MASK) == WWT_EDITBOX) {
@@ -445,100 +364,4 @@ Window *ActivateGamepadFocus()
 	} else {
 		w->OnClick({(local.left + local.right) / 2, (local.top + local.bottom) / 2}, widget, 1);
 	}
-	return w;
-}
-
-/** After activation, move focus to a newly opened window instead of staying on the button. */
-void UpdateGamepadFocusAfterActivation(Window *activated)
-{
-	if (activated == nullptr) return;
-	if (activated->window_class == WindowClass::DropdownMenu) return;
-
-	Window *target = FindNewEligibleWindow(_windows_before_activation);
-	_windows_before_activation.clear();
-	if (!FocusWindowAlive(activated)) {
-		if (target == nullptr) {
-			PruneFocusStack();
-			if (!_focus_stack.empty()) {
-				FocusCandidate candidate{};
-				if (BuildFocusCandidate(_focus_stack.back().window, _focus_stack.back().widget, candidate)) {
-					SetFocus(candidate);
-					return;
-				}
-			}
-			target = FrontWindowWithCandidates();
-		}
-	} else if (target == nullptr) {
-		target = FrontWindowAfter(activated);
-		if (target == nullptr) target = activated;
-	}
-
-	if (target == nullptr) {
-		ClearGamepadFocus();
-		return;
-	}
-	if (target == _gamepad_focus_window && _gamepad_focus_widget >= 0) return;
-
-	auto candidates = CollectWindowCandidates(target);
-	const FocusCandidate *first = FirstCandidate(candidates);
-	if (first != nullptr) SetFocus(*first);
-}
-
-void FocusGamepadWindow(Window *w)
-{
-	if (w == nullptr || IsExcludedFromGamepadFocus(w)) return;
-
-	auto candidates = CollectWindowCandidates(w);
-	const FocusCandidate *first = FirstCandidate(candidates);
-	if (first != nullptr) SetFocus(*first);
-}
-
-void FocusPreviousGamepadWindow()
-{
-	PruneFocusStack();
-	if (_focus_stack.empty()) {
-		ClearGamepadFocus();
-		return;
-	}
-
-	FocusEntry entry = _focus_stack.back();
-	_focus_stack.pop_back();
-
-	FocusCandidate candidate{};
-	if (BuildFocusCandidate(entry.window, entry.widget, candidate)) {
-		SetFocus(candidate);
-	} else {
-		ClearGamepadFocus();
-	}
-}
-
-void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button,
-		bool dropdown_closed, Window *opened_window)
-{
-	if (!dropdown_closed || !_gamepad_dropdown_selection_pending) return;
-	_gamepad_dropdown_selection_pending = false;
-
-	/* Prefer the exact window created by OnDropdownSelect. Toolbar-aligned windows
-	 * sit below the main toolbar in z-order, so z-order scanning cannot find them. */
-	Window *target = nullptr;
-	if (opened_window != nullptr && !IsExcludedFromGamepadFocus(opened_window) &&
-			!CollectWindowCandidates(opened_window).empty()) {
-		target = opened_window;
-	}
-	if (target == nullptr) target = FrontWindowAfter(dropdown_parent);
-	if (target == nullptr) target = dropdown_parent;
-	if (target == nullptr) return;
-
-	auto candidates = CollectWindowCandidates(target);
-	const FocusCandidate *first = nullptr;
-	if (target == dropdown_parent) {
-		for (const FocusCandidate &candidate : candidates) {
-			if (candidate.widget == dropdown_button) {
-				first = &candidate;
-				break;
-			}
-		}
-	}
-	if (first == nullptr) first = FirstCandidate(candidates);
-	if (first != nullptr) SetFocus(*first);
 }

@@ -2,9 +2,6 @@
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, version 2.
- * OpenTTD is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD.
  * If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
@@ -28,21 +25,8 @@ enum class GamepadFocusDirection : uint8_t {
 /** Move focus to the next focusable widget in the given direction. */
 void MoveGamepadFocus(GamepadFocusDirection direction);
 
-/** A activates the focused widget; returns the window that was activated. */
-Window *ActivateGamepadFocus();
-
-/** After activation, transfer focus to a newly opened window if one appeared. */
-void UpdateGamepadFocusAfterActivation(Window *activated);
-
-/** Force gamepad focus onto one specific window's first eligible widget. */
-void FocusGamepadWindow(Window *w);
-
-/** Return focus to the most recent still-open parent window. */
-void FocusPreviousGamepadWindow();
-
-/** Focus the window opened by a gamepad dropdown selection. */
-void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button,
-		bool dropdown_closed, Window *opened_window);
+/** A activates the focused widget. */
+void ActivateGamepadFocus();
 
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();

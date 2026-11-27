@@ -97,7 +97,6 @@ void CloseGamepadFocusWindow()
 	HandleBackButton();
 	_suppress_input_source_mark = false;
 	ClearGamepadFocus();
-	FocusPreviousGamepadWindow();
 	RestoreGamepadCursorPosition();
 }
 
@@ -267,8 +266,7 @@ void HandleGamepadActions()
 
 	if (dispatch && edge[GAP_A] && !_left_held) {
 		if (IsGamepadFocusActive()) {
-			Window *activated = ActivateGamepadFocus();
-			UpdateGamepadFocusAfterActivation(activated);
+			ActivateGamepadFocus();
 		} else {
 			HandleGamepadButton(false, true);
 			_left_held = true;

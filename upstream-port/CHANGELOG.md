@@ -38,37 +38,22 @@ file records only what this fork adds.
   `Window::DrawWidgets()`. Candidate widgets are hit-tested against the live nested tree so
   hidden selection planes are skipped. A activates the focused widget through its local
   click point; B closes the focused window.
-- Focus movement uses rendered rectangle edges with wrap-around, snaps the crosshair to the
-  focused widget, and transfers focus to a newly opened window after activation.
+- Focus movement uses rendered rectangle edges with wrap-around and snaps the crosshair to the
+  focused widget. Candidates are collected globally, so newly opened viewport, toolbar and build
+  windows are reachable without any forced focus transfer.
+- Candidate centers covered by a higher window are skipped. This prevents activating controls
+  behind a dialog such as New Game while still allowing D-pad navigation across all visible
+  windows.
 - Dropdown menu rows are now individual focus candidates; the red ring highlights one row
   instead of the whole list, and A selects that row.
-- D-pad focus is confined to the active window until B closes it, so modal/new-game windows
-  and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
-- Focus still transfers to a newly opened window after A activation.
-- Gamepad dropdown focus now disables OpenTTD's cursor-driven `drag_mode` and no longer snaps
+- Gamepad dropdown focus disables OpenTTD's cursor-driven `drag_mode` and no longer snaps
   the real cursor onto rows during D-pad navigation. This stops dropdowns from auto-committing
   the top-left row before the player activates one.
-- Gamepad focus transfer now identifies newly created windows by comparing the live window set
-  before and after activation. Toolbar-aligned build/list windows have lower z-priority than the
-  main toolbar, so z-order scanning could never find them; creation-based detection does.
-- Gamepad dropdown selections hook the normal selection callback and focus the exact window
-  created by that callback. When no window opens, focus returns to the dropdown's parent button.
-  A completed gamepad-originated selection transfers focus to the newly opened window above the
-  dropdown's parent toolbar;
-  persistent dropdowns do not transfer. Toggle-only dropdowns return focus to the parent button.
-  This covers all toolbar dropdowns: settings, save/load, small map, lists, rail/road/tram,
-  docks, air, trees/landscaping, music, messages and help.
-- Focus transfer after ordinary activations now targets a newly opened window above the activated
-  window, instead of whatever happens to be front-most.
-- D-pad focus stays confined to the active window even if its candidate set is momentarily empty.
-  `WWT_PANEL` and `WWT_INSET` containers are no longer focus candidates.
+- `WWT_PANEL` and `WWT_INSET` containers are no longer focus candidates.
 - B/back restores the saved crosshair position, and each new D-pad session captures the current
   position instead of retaining a stale one.
 - The last focused D-pad item is remembered per window/widget. Returning from left-stick
   crosshair control resumes D-pad navigation at that item instead of the first candidate.
-- Nested focus history is now a stack. Selecting an object that closes its window returns focus
-  to the most recent still-open parent window instead of the main toolbar. B pops one level, and
-  left-stick crossover preserves the current window's place in the stack.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

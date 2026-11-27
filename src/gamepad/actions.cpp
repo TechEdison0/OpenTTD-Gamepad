@@ -97,6 +97,7 @@ void CloseGamepadFocusWindow()
 	HandleBackButton();
 	_suppress_input_source_mark = false;
 	ClearGamepadFocus();
+	FocusPreviousGamepadWindow();
 	RestoreGamepadCursorPosition();
 }
 

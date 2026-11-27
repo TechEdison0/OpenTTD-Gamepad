@@ -66,6 +66,9 @@ file records only what this fork adds.
   position instead of retaining a stale one.
 - The last focused D-pad item is remembered per window/widget. Returning from left-stick
   crosshair control resumes D-pad navigation at that item instead of the first candidate.
+- Nested focus history is now a stack. Selecting an object that closes its window returns focus
+  to the most recent still-open parent window instead of the main toolbar. B pops one level, and
+  left-stick crossover preserves the current window's place in the stack.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

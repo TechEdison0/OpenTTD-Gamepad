@@ -290,8 +290,11 @@ void HandleGamepadActions()
 	bool pause_edge = edge[swap_sticks ? GAP_RSTICK : GAP_LSTICK];
 	bool fastforward_edge = edge[swap_sticks ? GAP_LSTICK : GAP_RSTICK];
 	/* One zoom step per press; the keyboard hotkeys handle their own auto-repeat. */
-	bool zoom_in_edge = edge[GAP_RTRIGGER];
-	bool zoom_out_edge = edge[GAP_LTRIGGER];
+	/* Trigger invert swaps that trigger's zoom action, not its press threshold. */
+	bool left_trigger_zoom_in = GetControllerAxisInvert(GAP_LTRIGGER);
+	bool right_trigger_zoom_in = !GetControllerAxisInvert(GAP_RTRIGGER);
+	bool zoom_in_edge = (edge[GAP_LTRIGGER] && left_trigger_zoom_in) || (edge[GAP_RTRIGGER] && right_trigger_zoom_in);
+	bool zoom_out_edge = (edge[GAP_LTRIGGER] && !left_trigger_zoom_in) || (edge[GAP_RTRIGGER] && !right_trigger_zoom_in);
 	_action_held = active;
 
 	if (any_edge) _input_source = InputSource::Gamepad;

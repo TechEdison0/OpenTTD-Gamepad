@@ -312,8 +312,8 @@ void LoadControllerOptions()
 	_controller_options.invert_right_trigger = ReadIniBool(device, "invert_rtrigger", false);
 	_controller_options.deadzone_left_stick = std::clamp(ReadIniInt(device, "deadzone_lstick", 15), 0, 100);
 	_controller_options.deadzone_right_stick = std::clamp(ReadIniInt(device, "deadzone_rstick", 15), 0, 100);
-	_controller_options.deadzone_left_trigger = std::clamp(ReadIniInt(device, "deadzone_ltrigger", 15), 0, 100);
-	_controller_options.deadzone_right_trigger = std::clamp(ReadIniInt(device, "deadzone_rtrigger", 15), 0, 100);
+	_controller_options.deadzone_left_trigger = std::clamp(ReadIniInt(device, "deadzone_ltrigger", 25), 0, 100);
+	_controller_options.deadzone_right_trigger = std::clamp(ReadIniInt(device, "deadzone_rtrigger", 25), 0, 100);
 	_controller_options.swap_sticks = ReadIniBool(device, "swap_sticks", false);
 	_controller_options.left_stick_speed = ReadIniSpeed(device, "speed_lstick");
 	_controller_options.right_stick_speed = ReadIniSpeed(device, "speed_rstick");
@@ -617,7 +617,8 @@ bool IsControllerMappingControlActive(size_t step)
 			if (_mapping_steps[step].flag == MAPPING_STEP_TRIGGER) {
 				int range = static_cast<int>(value.max) - static_cast<int>(value.min);
 				if (range <= 0) return false;
-				return GetGamepadLiveAxis(value.index) > rest + range / 4;
+				int limit = range * GetControllerDeadzoneForStep(step) / 100;
+				return GetGamepadLiveAxis(value.index) > rest + limit;
 			}
 			int delta = static_cast<int>(GetGamepadLiveAxis(value.index)) - rest;
 			return delta > _mapping_axis_threshold / 2 || delta < -_mapping_axis_threshold / 2;
@@ -625,7 +626,7 @@ bool IsControllerMappingControlActive(size_t step)
 
 		case MappingKind::LogicalAxis: {
 			int live = static_cast<int>(GetGamepadLogicalAxisValue(value.index));
-			if (_mapping_steps[step].flag == MAPPING_STEP_TRIGGER) return live > value.max / 4;
+			if (_mapping_steps[step].flag == MAPPING_STEP_TRIGGER) return live > value.max * GetControllerDeadzoneForStep(step) / 100;
 			int delta = live - static_cast<int>(value.rest);
 			return delta > _mapping_axis_threshold / 2 || delta < -_mapping_axis_threshold / 2;
 		}

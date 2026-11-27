@@ -63,8 +63,8 @@ struct ControllerOptions {
 	bool invert_right_trigger = false;///< Invert right trigger actuation.
 	uint8_t deadzone_left_stick = 15;   ///< Left stick deadzone in percent.
 	uint8_t deadzone_right_stick = 15;  ///< Right stick deadzone in percent.
-	uint8_t deadzone_left_trigger = 15; ///< Left trigger deadzone in percent.
-	uint8_t deadzone_right_trigger = 15;///< Right trigger deadzone in percent.
+	uint8_t deadzone_left_trigger = 25; ///< Left trigger deadzone in percent; matches current C4 threshold.
+	uint8_t deadzone_right_trigger = 25;///< Right trigger deadzone in percent; matches current C4 threshold.
 	bool swap_sticks = false;              ///< Swap stick axes and stick clicks.
 	ControllerAxisSpeed left_stick_speed = ControllerAxisSpeed::Normal;  ///< Left stick rate preset.
 	ControllerAxisSpeed right_stick_speed = ControllerAxisSpeed::Normal; ///< Right stick rate preset.

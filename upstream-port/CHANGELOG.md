@@ -46,10 +46,8 @@ file records only what this fork adds.
   and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
 - Focus still transfers to a newly opened window after A activation.
 - Selecting a dropdown row watches that specific dropdown until its delayed click closes it,
-  then moves focus to the newly opened window rather than the dropdown's parent toolbar. This
-  targets `WindowClass::BuildToolbar` windows such as `RoadToolbarWidgets` (`WID_ROT_*`) and
-  `RailToolbarWidgets` (`WID_RAT_*`). The watcher is cancelled by B, left-stick movement,
-  or real mouse/touch input.
+  then moves focus into the resulting build submenu. The watcher is cancelled by B,
+  left-stick movement, or real mouse/touch input.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

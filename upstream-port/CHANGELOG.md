@@ -31,7 +31,7 @@ file records only what this fork adds.
   as `logical:N:min:max:rest`. Older four-field raw values still parse; their rest is
   inferred from the step type.
 
-## 2026-11-26 — C3 focus model: touch-gated OSK
+## 2026-11-27 — C3 focus model: controller focus navigation (released in `v20261127-c3-controller-focus`)
 
 ### Added
 - Geometric D-pad focus over rendered widget rectangles, with a red focus ring drawn from
@@ -76,6 +76,13 @@ file records only what this fork adds.
 - On Android, `SDL_StartTextInput()` is now called only for touch-originated edit boxes.
   This prevents the native keyboard from opening when a controller focuses the picker
   search field; touch taps still start text input and the in-game OSK.
+
+### Verified
+
+Compiled and manually tested on Linux x86_64, Windows x86_64 under Wine and Android
+arm64-v8a on a Samsung Galaxy S25 Ultra. The maintainer completed a controller-only
+workflow: created a depot and two bus stops, bought a bus, assigned orders, and cloned
+the bus with shared orders.
 
 ## 2026-11-26 — `v20261126-c2-action-layer` (C2 complete)
 

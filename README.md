@@ -148,7 +148,21 @@ Every build is pinned to:
   linkage for controller input, the Controller window, the device registry and
   `controller.cfg`, and removal of the startup survey.
 
-### Current release — C2 playable controller layer
+### Current release — C3 controller focus navigation
+
+`v20261127-c3-controller-focus` completes the D-pad focus model. The red focus ring
+highlights one live widget at a time, D-pad navigation moves geometrically across windows,
+A activates the focused widget, and B closes through the normal back path. Dropdown rows
+are individually focusable without cursor-driven auto-selection. Focus can reach toolbar
+build windows and windows opened by clicking viewport objects such as depots, vehicles and
+towns; main-menu controls behind an open dialog are suppressed. The bottom status bar is
+ignored, and the main toolbar save button is focusable. Returning from left-stick crosshair
+control resumes at the last focused D-pad item.
+
+The maintainer verified a controller-only workflow on all three targets: created a depot
+and two bus stops, bought a bus, assigned orders, and cloned the bus with shared orders.
+
+### Previous release — C2 playable controller layer
 
 `v20261126-c2-action-layer` is the first **playable** controller pass. The pad can move
 the crosshair across the whole UI and perform the functions needed to play, including held
@@ -187,6 +201,7 @@ graphics/sound/music sets are not included.
 
 | Release | Artifacts |
 |---|---|
+| `v20261127-c3-controller-focus` | C3 focus navigation: red widget ring, D-pad window/dropdown navigation, focused A activation, B close, crosshair handoff |
 | `v20261126-c2-action-layer` | C2 playable controller pass: full UI navigation, held A/X, Ctrl/Shift modifiers, crosshair, zoom, pause/fast-forward |
 | `v20261126-c1-controller-implementation` | C1 controller layer: launcher, function guide, 18-step mapping, live values |
 | `v20261124-c0-gamepad-test` | controller event verification (diagnostics window) |

@@ -3,6 +3,15 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
+## 2026-11-27 — C5 list and slider navigation (in progress)
+
+- Added generic window hooks for custom-drawn list rows and sliders.
+- Town Directory town rows and Advanced Options accordion/settings rows are now focusable,
+  scroll into view and activate with A.
+- Focused sliders in Game Options and the Music window are adjusted with the left stick.
+- Leaf custom-drawn direction panels, including station orientation buttons, are now
+  focusable alongside the existing depot direction buttons.
+
 ## 2026-11-27 — `v20261127-c4-viewport-movement` (C4 complete)
 
 - Right-stick axes now pan the main viewport through the existing `HandleJoystickScroll()`

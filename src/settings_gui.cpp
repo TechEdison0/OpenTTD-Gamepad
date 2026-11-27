@@ -452,6 +452,76 @@ struct GameOptionsWindow : Window {
 		this->gui_scale = _gui_scale;
 	}
 
+	uint GetGamepadListRowCount(WidgetID widget) const override
+	{
+		if (widget != WID_GO_OPTIONSPANEL || active_tab != WID_GO_TAB_ADVANCED) return 0;
+		return this->vscroll->GetCount();
+	}
+
+	Rect GetGamepadListRowRect(WidgetID widget, uint row) const override
+	{
+		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect().Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect);
+		int top = r.top + (static_cast<int>(row) - this->vscroll->GetPosition()) * BaseSettingEntry::line_height;
+		return {r.left, top, r.right, top + BaseSettingEntry::line_height};
+	}
+
+	void OnGamepadListFocus(WidgetID widget, uint row) override
+	{
+		if (widget == WID_GO_OPTIONSPANEL) this->vscroll->ScrollTowards(row);
+	}
+
+	void OnGamepadListSelect(WidgetID widget, uint row) override
+	{
+		if (widget != WID_GO_OPTIONSPANEL || row >= static_cast<uint>(this->vscroll->GetCount())) return;
+		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect().Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect);
+		int y = r.top + (static_cast<int>(row) - this->vscroll->GetPosition()) * BaseSettingEntry::line_height + BaseSettingEntry::line_height / 2;
+		this->OptionsPanelClick({r.left + WidgetDimensions::scaled.hsep_indent, y});
+	}
+
+	bool GetGamepadSliderInfo(WidgetID widget, int &min_value, int &max_value, int &value) const override
+	{
+		switch (widget) {
+			case WID_GO_GUI_SCALE:
+				min_value = MIN_INTERFACE_SCALE; max_value = MAX_INTERFACE_SCALE; value = this->gui_scale; return true;
+			case WID_GO_BASE_SFX_VOLUME:
+				min_value = 0; max_value = INT8_MAX; value = _settings_client.music.effect_vol; return true;
+			case WID_GO_BASE_MUSIC_VOLUME:
+				min_value = 0; max_value = INT8_MAX; value = _settings_client.music.music_vol; return true;
+			default:
+				return false;
+		}
+	}
+
+	void OnGamepadSliderDelta(WidgetID widget, int delta) override
+	{
+		switch (widget) {
+			case WID_GO_GUI_SCALE:
+				this->gui_scale = Clamp(this->gui_scale + delta, MIN_INTERFACE_SCALE, MAX_INTERFACE_SCALE);
+				this->gui_scale_changed = true;
+				this->SetWidgetDirty(widget);
+				this->SetWidgetDirty(WID_GO_GUI_SCALE_AUTO_TEXT);
+				break;
+			case WID_GO_BASE_SFX_VOLUME: {
+				uint8_t vol = Clamp(static_cast<int>(_settings_client.music.effect_vol) + delta, 0, INT8_MAX);
+				_settings_client.music.effect_vol = vol;
+				SetEffectVolume(vol);
+				this->SetWidgetDirty(widget);
+				SetWindowClassesDirty(WindowClass::Music);
+				break;
+			}
+			case WID_GO_BASE_MUSIC_VOLUME: {
+				uint8_t vol = Clamp(static_cast<int>(_settings_client.music.music_vol) + delta, 0, INT8_MAX);
+				_settings_client.music.music_vol = vol;
+				MusicDriver::GetInstance()->SetVolume(vol);
+				this->SetWidgetDirty(widget);
+				SetWindowClassesDirty(WindowClass::Music);
+				break;
+			}
+			default:
+				break;
+		}
+	}
+
 	void Close([[maybe_unused]] int data = 0) override
 	{
 		CloseWindowById(WindowClass::CustomCurrenty, 0);

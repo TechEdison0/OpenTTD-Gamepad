@@ -21,6 +21,7 @@
 
 static Window *_gamepad_focus_window = nullptr;
 static WidgetID _gamepad_focus_widget = -1;
+static int _gamepad_focus_row = -1;
 static Window *_last_focus_window = nullptr;
 static WidgetID _last_focus_widget = -1;
 
@@ -29,6 +30,7 @@ struct FocusCandidate {
 	Window *w;
 	WidgetID widget;
 	Rect rect;
+	int list_row = -1; ///< Row index for virtual list candidates, otherwise -1.
 };
 
 /** Check whether a widget should participate in focus navigation. */
@@ -99,10 +101,10 @@ static bool IsWindowSuppressed(const Window *w)
 	return false;
 }
 
-static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, WidgetID widget, Rect rect)
+static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, WidgetID widget, Rect rect, int list_row = -1)
 {
 	if (rect.Width() <= 0 || rect.Height() <= 0) return;
-	candidates.push_back({w, widget, rect});
+	candidates.push_back({w, widget, rect, list_row});
 }
 
 /** Collect candidates from one window. Dropdown items are individual candidates. */
@@ -121,7 +123,28 @@ static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 
 	for (const auto &pair : w->widget_lookup) {
 		NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
-		if (!IsFocusableWidget(nw)) continue;
+		if (nw == nullptr || nw->GetIndex() < 0) continue;
+
+		bool focusable = IsFocusableWidget(nw);
+		if (!focusable && (nw->type & WWT_MASK) == WWT_PANEL) {
+			/* Custom-drawn push panels (station/depot direction buttons) are leaf panels. */
+			NWidgetContainer *container = dynamic_cast<NWidgetContainer *>(nw);
+			focusable = container != nullptr && container->IsEmpty();
+		}
+		if (!focusable) {
+			int min_value, max_value, value;
+			if (w->GetGamepadSliderInfo(nw->GetIndex(), min_value, max_value, value)) focusable = true;
+		}
+
+		uint rows = w->GetGamepadListRowCount(nw->GetIndex());
+		if (rows > 0) {
+			for (uint row = 0; row < rows; row++) {
+				Rect local = w->GetGamepadListRowRect(nw->GetIndex(), row);
+				AddCandidate(candidates, w, nw->GetIndex(), local.Translate(w->left, w->top), static_cast<int>(row));
+			}
+			continue;
+		}
+		if (!focusable) continue;
 
 		Rect local = nw->GetCurrentRect();
 		int cx = (local.left + local.right) / 2;
@@ -263,11 +286,14 @@ static void SetFocus(const FocusCandidate &candidate)
 	MarkFocusDirty();
 	_gamepad_focus_window = candidate.w;
 	_gamepad_focus_widget = candidate.widget;
+	_gamepad_focus_row = candidate.list_row;
 	_last_focus_window = candidate.w;
 	_last_focus_widget = candidate.widget;
 	MarkFocusDirty();
 
 	if (candidate.w->window_class == WindowClass::DropdownMenu) SetDropdownDragMode(candidate.w, false);
+
+	if (candidate.list_row >= 0) candidate.w->OnGamepadListFocus(candidate.widget, candidate.list_row);
 
 	SetFocusedWindow(candidate.w);
 	SnapCursorToFocus();
@@ -351,6 +377,10 @@ void ActivateGamepadFocus()
 	}
 
 	NWidgetCore *nw = w->GetWidget<NWidgetCore>(widget);
+	if (_gamepad_focus_row >= 0) {
+		w->OnGamepadListSelect(widget, static_cast<uint>(_gamepad_focus_row));
+		return;
+	}
 	if (nw == nullptr) return;
 
 	Rect local = nw->GetCurrentRect();

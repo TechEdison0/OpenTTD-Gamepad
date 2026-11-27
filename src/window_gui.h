@@ -669,6 +669,19 @@ public:
 	 */
 	virtual void OnClick([[maybe_unused]] Point pt, [[maybe_unused]] WidgetID widget, [[maybe_unused]] int click_count) {}
 
+	/** C5 list rows exposed to gamepad focus. Override on custom-drawn lists. */
+	virtual uint GetGamepadListRowCount([[maybe_unused]] WidgetID widget) const { return 0; }
+	/** Screen-relative rectangle for one virtual list row. */
+	virtual Rect GetGamepadListRowRect([[maybe_unused]] WidgetID widget, [[maybe_unused]] uint row) const { return {}; }
+	/** Scroll a focused row into view. */
+	virtual void OnGamepadListFocus([[maybe_unused]] WidgetID widget, [[maybe_unused]] uint row) {}
+	/** Activate one virtual list row. */
+	virtual void OnGamepadListSelect([[maybe_unused]] WidgetID widget, [[maybe_unused]] uint row) {}
+	/** Slider metadata for left-stick adjustment. */
+	virtual bool GetGamepadSliderInfo([[maybe_unused]] WidgetID widget, [[maybe_unused]] int &min_value, [[maybe_unused]] int &max_value, [[maybe_unused]] int &value) const { return false; }
+	/** Apply a left-stick slider delta while a slider is focused. */
+	virtual void OnGamepadSliderDelta([[maybe_unused]] WidgetID widget, [[maybe_unused]] int delta) {}
+
 	/**
 	 * A click with the right mouse button has been made on the window.
 	 * @param pt     the point inside the window that has been clicked.

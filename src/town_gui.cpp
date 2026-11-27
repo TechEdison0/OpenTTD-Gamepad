@@ -888,6 +888,29 @@ public:
 		}
 	}
 
+	uint GetGamepadListRowCount(WidgetID widget) const override
+	{
+		return widget == WID_TD_LIST ? static_cast<uint>(this->towns.size()) : 0;
+	}
+
+	Rect GetGamepadListRowRect(WidgetID widget, uint row) const override
+	{
+		Rect r = this->GetWidget<NWidgetBase>(widget)->GetCurrentRect().Shrink(WidgetDimensions::scaled.framerect);
+		int top = r.top + (static_cast<int>(row) - this->vscroll->GetPosition()) * this->resize.step_height;
+		return {r.left, top, r.right, top + this->resize.step_height};
+	}
+
+	void OnGamepadListFocus(WidgetID widget, uint row) override
+	{
+		if (widget == WID_TD_LIST) this->vscroll->ScrollTowards(row);
+	}
+
+	void OnGamepadListSelect(WidgetID widget, uint row) override
+	{
+		if (widget != WID_TD_LIST || row >= this->towns.size()) return;
+		ScrollMainWindowToTile(this->towns[row]->xy);
+	}
+
 	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
 	{
 		switch (widget) {

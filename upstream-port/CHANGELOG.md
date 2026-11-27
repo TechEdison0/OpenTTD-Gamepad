@@ -48,8 +48,11 @@ file records only what this fork adds.
 - Gamepad dropdown focus now disables OpenTTD's cursor-driven `drag_mode` and no longer snaps
   the real cursor onto rows during D-pad navigation. This stops dropdowns from auto-committing
   the top-left row before the player activates one.
-- Gamepad dropdown selections hook the normal selection callback. A completed gamepad-originated
-  selection transfers focus to the newly opened window above the dropdown's parent toolbar;
+- Gamepad dropdown selections hook the normal selection callback and compare the z-order front
+  window immediately before and after the callback. The exact newly opened window is forced into
+  gamepad focus instead of relying on a z-order guess; when no window opens, focus returns to the
+  dropdown's parent button. A completed gamepad-originated selection transfers focus to the
+  newly opened window above the dropdown's parent toolbar;
   persistent dropdowns do not transfer. Toggle-only dropdowns return focus to the parent button.
   This covers all toolbar dropdowns: settings, save/load, small map, lists, rail/road/tram,
   docks, air, trees/landscaping, music, messages and help.

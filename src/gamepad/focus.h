@@ -34,8 +34,12 @@ Window *ActivateGamepadFocus();
 /** After activation, transfer focus to a newly opened window if one appeared. */
 void UpdateGamepadFocusAfterActivation(Window *activated);
 
+/** Force gamepad focus onto one specific window's first eligible widget. */
+void FocusGamepadWindow(Window *w);
+
 /** Focus the window opened by a gamepad dropdown selection. */
-void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button, bool dropdown_closed);
+void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button,
+		bool dropdown_closed, Window *front_before, Window *front_after);
 
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();

@@ -368,12 +368,29 @@ void UpdateGamepadFocusAfterActivation(Window *activated)
 	if (first != nullptr) SetFocus(*first);
 }
 
-void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button, bool dropdown_closed)
+void FocusGamepadWindow(Window *w)
+{
+	if (w == nullptr || IsExcludedFromGamepadFocus(w)) return;
+
+	auto candidates = CollectWindowCandidates(w);
+	const FocusCandidate *first = FirstCandidate(candidates);
+	if (first != nullptr) SetFocus(*first);
+}
+
+void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button,
+		bool dropdown_closed, Window *front_before, Window *front_after)
 {
 	if (!dropdown_closed || !_gamepad_dropdown_selection_pending) return;
 	_gamepad_dropdown_selection_pending = false;
 
-	Window *target = FrontWindowAfter(dropdown_parent);
+	/* Prefer the exact window that appeared above the dropdown's parent. */
+	Window *target = nullptr;
+	if (front_after != nullptr && front_after != front_before &&
+			!IsExcludedFromGamepadFocus(front_after) &&
+			!CollectWindowCandidates(front_after).empty()) {
+		target = front_after;
+	}
+	if (target == nullptr) target = FrontWindowAfter(dropdown_parent);
 	if (target == nullptr) target = dropdown_parent;
 	if (target == nullptr) return;
 

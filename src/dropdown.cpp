@@ -452,9 +452,25 @@ struct DropdownWindow : Window {
 			Window *dropdown_parent = this->parent;
 			WidgetID dropdown_button = this->parent_button;
 			bool dropdown_closed = !this->options.Test(DropDownOption::Persist);
+
+			Window *front_before = nullptr;
+			for (Window *w : Window::IterateFromFront()) {
+				if (w == this) continue;
+				front_before = w;
+				break;
+			}
+
 			if (dropdown_closed) this->Close();
-			this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
-			NotifyGamepadDropdownSelectionCompleted(dropdown_parent, dropdown_button, dropdown_closed);
+			dropdown_parent->OnDropdownSelect(dropdown_button, this->selected_result, this->selected_click_result);
+
+			Window *front_after = nullptr;
+			for (Window *w : Window::IterateFromFront()) {
+				front_after = w;
+				break;
+			}
+
+			NotifyGamepadDropdownSelectionCompleted(dropdown_parent, dropdown_button,
+					dropdown_closed, front_before, front_after);
 			return;
 		}
 

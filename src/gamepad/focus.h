@@ -28,17 +28,14 @@ enum class GamepadFocusDirection : uint8_t {
 /** Move focus to the next focusable widget in the given direction. */
 void MoveGamepadFocus(GamepadFocusDirection direction);
 
-/** Activate the currently focused widget. */
-void ActivateGamepadFocus();
+/** A activates the focused widget; returns the window that was activated. */
+Window *ActivateGamepadFocus();
 
 /** After activation, transfer focus to a newly opened window if one appeared. */
-void UpdateGamepadFocusAfterActivation();
-
-/** Mark that a gamepad activation selected a dropdown row. */
-void MarkGamepadDropdownSelection();
+void UpdateGamepadFocusAfterActivation(Window *activated);
 
 /** Focus the window opened by a gamepad dropdown selection. */
-void NotifyGamepadDropdownSelectionCompleted();
+void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button, bool dropdown_closed);
 
 /** Close the focused window through the normal back/escape path. */
 void CloseGamepadFocusWindow();

@@ -45,9 +45,20 @@ file records only what this fork adds.
 - D-pad focus is confined to the active window until B closes it, so modal/new-game windows
   and rail/road menus cannot leak focus back into the main menu, toolbar or bottom bar.
 - Focus still transfers to a newly opened window after A activation.
-- Gamepad dropdown selections hook the normal dropdown-selection callback, so focus moves into
-  the window opened by roads/rail/options/landscaping selections without timers. The hook only
-  fires for gamepad-originated dropdown selections.
+- Gamepad dropdown focus now disables OpenTTD's cursor-driven `drag_mode` and no longer snaps
+  the real cursor onto rows during D-pad navigation. This stops dropdowns from auto-committing
+  the top-left row before the player activates one.
+- Gamepad dropdown selections hook the normal selection callback. A completed gamepad-originated
+  selection transfers focus to the newly opened window above the dropdown's parent toolbar;
+  persistent dropdowns do not transfer. Toggle-only dropdowns return focus to the parent button.
+  This covers all toolbar dropdowns: settings, save/load, small map, lists, rail/road/tram,
+  docks, air, trees/landscaping, music, messages and help.
+- Focus transfer after ordinary activations now targets a newly opened window above the activated
+  window, instead of whatever happens to be front-most.
+- D-pad focus stays confined to the active window even if its candidate set is momentarily empty.
+  `WWT_PANEL` and `WWT_INSET` containers are no longer focus candidates.
+- B/back restores the saved crosshair position, and each new D-pad session captures the current
+  position instead of retaining a stale one.
 - D-pad focus now excludes `WindowClass::Statusbar` entirely, so the in-game bottom bar
   (date/news/bank) is mouse + A only. Stale or empty active windows are discarded before
   selecting a new focus target.

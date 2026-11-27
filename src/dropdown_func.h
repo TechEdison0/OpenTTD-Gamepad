@@ -18,6 +18,9 @@
 int GetDropdownFocusItemCount(const Window *w);
 Rect GetDropdownFocusItemRect(const Window *w, int index);
 void ActivateDropdownFocusItem(Window *w, int index);
+
+/** Enable or disable cursor-driven drag selection for gamepad focus navigation. */
+void SetDropdownDragMode(Window *w, bool enabled);
 /** @} */
 
 /* Show drop down menu containing a fixed list of strings */

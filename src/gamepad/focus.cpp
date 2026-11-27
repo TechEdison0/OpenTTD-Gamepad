@@ -52,8 +52,6 @@ static bool IsFocusableWidget(const NWidgetCore *nw)
 		case WWT_DROPDOWN:
 		case WWT_EDITBOX:
 		case WWT_CLOSEBOX:
-		case WWT_PANEL:
-		case WWT_INSET:
 			return true;
 		default:
 			return false;
@@ -148,12 +146,22 @@ static Window *FrontWindowWithCandidates()
 	return nullptr;
 }
 
+/** Find the front-most eligible window above a known window, excluding it. */
+static Window *FrontWindowAfter(Window *skip)
+{
+	for (Window *w : Window::IterateFromFront()) {
+		if (w == skip) break;
+		if (IsExcludedFromGamepadFocus(w)) continue;
+		if (!CollectWindowCandidates(w).empty()) return w;
+	}
+	return nullptr;
+}
+
 /** Focus navigation is confined to the active window until B closes it. */
 static Window *GetActiveFocusWindow()
 {
 	if (FocusWindowAlive(_gamepad_focus_window) &&
-			!IsExcludedFromGamepadFocus(_gamepad_focus_window) &&
-			!CollectWindowCandidates(_gamepad_focus_window).empty()) {
+			!IsExcludedFromGamepadFocus(_gamepad_focus_window)) {
 		return _gamepad_focus_window;
 	}
 	ClearGamepadFocus();
@@ -244,6 +252,9 @@ static void SnapCursorToFocus()
 	bool valid = false;
 	Rect r = GetFocusRect(valid);
 	if (!valid) return;
+	/* Dropdown rows are hit-tested from the real cursor position. Keep navigation
+	 * decoupled from the cursor; ActivateDropdownFocusItem() parks it on activation. */
+	if (_gamepad_focus_window->window_class == WindowClass::DropdownMenu) return;
 	SetGamepadCursorPosition((r.left + r.right) / 2, (r.top + r.bottom) / 2);
 }
 
@@ -253,6 +264,14 @@ static void SetFocus(const FocusCandidate &candidate)
 	_gamepad_focus_window = candidate.w;
 	_gamepad_focus_widget = candidate.widget;
 	MarkFocusDirty();
+
+	if (candidate.w->window_class == WindowClass::DropdownMenu) {
+		_gamepad_dropdown_selection_pending = true;
+		SetDropdownDragMode(candidate.w, false);
+	} else {
+		_gamepad_dropdown_selection_pending = false;
+	}
+
 	SetFocusedWindow(candidate.w);
 	SnapCursorToFocus();
 }
@@ -300,20 +319,19 @@ void MoveGamepadFocus(GamepadFocusDirection direction)
 	SetFocus(*best);
 }
 
-void ActivateGamepadFocus()
+Window *ActivateGamepadFocus()
 {
 	Window *w = nullptr;
 	WidgetID widget = -1;
-	if (!GetGamepadFocus(w, widget)) return;
+	if (!GetGamepadFocus(w, widget)) return nullptr;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
-		MarkGamepadDropdownSelection();
 		ActivateDropdownFocusItem(w, widget);
-		return;
+		return w;
 	}
 
 	NWidgetCore *nw = w->GetWidget<NWidgetCore>(widget);
-	if (nw == nullptr) return;
+	if (nw == nullptr) return nullptr;
 
 	Rect local = nw->GetCurrentRect();
 	if ((nw->type & WWT_MASK) == WWT_EDITBOX) {
@@ -322,37 +340,53 @@ void ActivateGamepadFocus()
 	} else {
 		w->OnClick({(local.left + local.right) / 2, (local.top + local.bottom) / 2}, widget, 1);
 	}
+	return w;
 }
 
 /** After activation, move focus to a newly opened window instead of staying on the button. */
-void UpdateGamepadFocusAfterActivation()
+void UpdateGamepadFocusAfterActivation(Window *activated)
 {
-	Window *front = FrontWindowWithCandidates();
-	if (front == nullptr) {
+	if (activated == nullptr) return;
+	if (activated->window_class == WindowClass::DropdownMenu) return;
+
+	Window *target = nullptr;
+	if (!FocusWindowAlive(activated)) {
+		target = FrontWindowWithCandidates();
+	} else {
+		target = FrontWindowAfter(activated);
+		if (target == nullptr) target = activated;
+	}
+
+	if (target == nullptr) {
 		ClearGamepadFocus();
 		return;
 	}
-	if (front == _gamepad_focus_window && _gamepad_focus_widget >= 0) return;
+	if (target == _gamepad_focus_window && _gamepad_focus_widget >= 0) return;
 
-	auto candidates = CollectWindowCandidates(front);
+	auto candidates = CollectWindowCandidates(target);
 	const FocusCandidate *first = FirstCandidate(candidates);
 	if (first != nullptr) SetFocus(*first);
 }
 
-void MarkGamepadDropdownSelection()
+void NotifyGamepadDropdownSelectionCompleted(Window *dropdown_parent, WidgetID dropdown_button, bool dropdown_closed)
 {
-	_gamepad_dropdown_selection_pending = true;
-}
-
-void NotifyGamepadDropdownSelectionCompleted()
-{
-	if (!_gamepad_dropdown_selection_pending) return;
+	if (!dropdown_closed || !_gamepad_dropdown_selection_pending) return;
 	_gamepad_dropdown_selection_pending = false;
 
-	Window *front = FrontWindowWithCandidates();
-	if (front == nullptr) return;
+	Window *target = FrontWindowAfter(dropdown_parent);
+	if (target == nullptr) target = dropdown_parent;
+	if (target == nullptr) return;
 
-	auto candidates = CollectWindowCandidates(front);
-	const FocusCandidate *first = FirstCandidate(candidates);
+	auto candidates = CollectWindowCandidates(target);
+	const FocusCandidate *first = nullptr;
+	if (target == dropdown_parent) {
+		for (const FocusCandidate &candidate : candidates) {
+			if (candidate.widget == dropdown_button) {
+				first = &candidate;
+				break;
+			}
+		}
+	}
+	if (first == nullptr) first = FirstCandidate(candidates);
 	if (first != nullptr) SetFocus(*first);
 }

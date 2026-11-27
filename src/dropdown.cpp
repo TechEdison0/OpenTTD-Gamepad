@@ -449,9 +449,12 @@ struct DropdownWindow : Window {
 		if (this->click_delay != 0 && --this->click_delay == 0) {
 			/* Close the dropdown, so it doesn't affect new window placement.
 			 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
-			if (!this->options.Test(DropDownOption::Persist)) this->Close();
+			Window *dropdown_parent = this->parent;
+			WidgetID dropdown_button = this->parent_button;
+			bool dropdown_closed = !this->options.Test(DropDownOption::Persist);
+			if (dropdown_closed) this->Close();
 			this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
-			NotifyGamepadDropdownSelectionCompleted();
+			NotifyGamepadDropdownSelectionCompleted(dropdown_parent, dropdown_button, dropdown_closed);
 			return;
 		}
 
@@ -579,6 +582,12 @@ void ActivateDropdownFocusItem(Window *w, int index)
 	Point screen{(r.left + r.right) / 2, (r.top + r.bottom) / 2};
 	_cursor.pos = screen;
 	w->OnClick({screen.x - w->left, screen.y - w->top}, WID_DM_ITEMS, 1);
+}
+
+void SetDropdownDragMode(Window *w, bool enabled)
+{
+	if (w == nullptr || w->window_class != WindowClass::DropdownMenu) return;
+	static_cast<DropdownWindow *>(w)->drag_mode = enabled;
 }
 
 void ReplaceDropDownList(Window *parent, DropDownList &&list, std::optional<int> selected_result)

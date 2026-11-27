@@ -66,6 +66,27 @@ static bool IsExcludedFromGamepadFocus(const Window *w)
 	return w->window_class == WindowClass::Statusbar;
 }
 
+/**
+ * The main menu is a persistent background window. It must not compete for D-pad focus
+ * while a foreground dialog is open, otherwise D-pad down jumps to New Game instead of
+ * the focused dialog option. Other background windows are left alone; suppressing those
+ * previously broke normal cross-window navigation.
+ */
+static bool IsWindowSuppressed(const Window *w)
+{
+	if (IsExcludedFromGamepadFocus(w) || w->window_class != WindowClass::SelectGame) return false;
+
+	for (Window *other : Window::IterateFromFront()) {
+		if (other == w || IsExcludedFromGamepadFocus(other)) continue;
+		if (other->window_class == WindowClass::DropdownMenu) return true;
+		for (const auto &pair : other->widget_lookup) {
+			NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
+			if (nw != nullptr && (IsFocusableWidget(nw) || other->IsGamepadFocusableWidget(nw->GetIndex()))) return true;
+		}
+	}
+	return false;
+}
+
 static void MarkFocusDirty()
 {
 	if (_gamepad_focus_window == nullptr || _gamepad_focus_widget < 0) return;
@@ -106,7 +127,7 @@ static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, Wid
 static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 {
 	std::vector<FocusCandidate> candidates;
-	if (IsExcludedFromGamepadFocus(w)) return candidates;
+	if (IsExcludedFromGamepadFocus(w) || IsWindowSuppressed(w)) return candidates;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
 		int count = GetDropdownFocusItemCount(w);
@@ -289,7 +310,7 @@ static void SetFocus(const FocusCandidate &candidate)
 static bool FindLastFocusCandidate(FocusCandidate &out)
 {
 	Window *w = _last_focus_window;
-	if (w == nullptr || !FocusWindowAlive(w) || IsExcludedFromGamepadFocus(w)) return false;
+	if (w == nullptr || !FocusWindowAlive(w) || IsExcludedFromGamepadFocus(w) || IsWindowSuppressed(w)) return false;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
 		Rect r = GetDropdownFocusItemRect(w, _last_focus_widget);

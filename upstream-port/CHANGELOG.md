@@ -19,6 +19,8 @@ file records only what this fork adds.
   remains toggleable by build flag, compiled off by default.
 - Speed dropdowns now open through an explicit row anchor instead of treating the custom
   canvas as a dropdown button widget.
+- Main-menu background window is suppressed for D-pad focus whenever a foreground dialog
+  is open. Other background windows remain focusable.
 
 ## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 

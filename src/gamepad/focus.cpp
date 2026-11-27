@@ -25,6 +25,7 @@
 static Window *_gamepad_focus_window = nullptr;
 static WidgetID _gamepad_focus_widget = -1;
 static Window *_pending_dropdown_window = nullptr;
+static Window *_pending_dropdown_parent = nullptr;
 static int _pending_dropdown_ticks = 0;
 
 /** Candidate used by one D-pad movement. Rectangles are in screen coordinates. */
@@ -111,6 +112,7 @@ void ClearGamepadFocus()
 	_gamepad_focus_window = nullptr;
 	_gamepad_focus_widget = -1;
 	_pending_dropdown_window = nullptr;
+	_pending_dropdown_parent = nullptr;
 	_pending_dropdown_ticks = 0;
 }
 
@@ -151,6 +153,16 @@ static Window *FrontWindowWithCandidates()
 }
 
 /** Focus navigation is confined to the active window until B closes it. */
+static Window *FrontWindowAfterDropdown(Window *dropdown_parent)
+{
+	for (Window *w : Window::IterateFromFront()) {
+		if (w == dropdown_parent) continue;
+		if (IsExcludedFromGamepadFocus(w)) continue;
+		if (!CollectWindowCandidates(w).empty()) return w;
+	}
+	return nullptr;
+}
+
 static Window *GetActiveFocusWindow()
 {
 	if (FocusWindowAlive(_gamepad_focus_window) &&
@@ -345,6 +357,7 @@ void RequestDropdownFocusTransfer(Window *dropdown)
 {
 	if (dropdown == nullptr || !FocusWindowAlive(dropdown)) return;
 	_pending_dropdown_window = dropdown;
+	_pending_dropdown_parent = dropdown->parent;
 	_pending_dropdown_ticks = 60;
 }
 
@@ -354,6 +367,7 @@ void TickDropdownFocusTransfer()
 
 	if (--_pending_dropdown_ticks <= 0) {
 		_pending_dropdown_window = nullptr;
+		_pending_dropdown_parent = nullptr;
 		return;
 	}
 
@@ -361,7 +375,10 @@ void TickDropdownFocusTransfer()
 	if (FocusWindowAlive(_pending_dropdown_window)) return;
 	_pending_dropdown_window = nullptr;
 
-	Window *front = FrontWindowWithCandidates();
+	/* Prefer the window opened by the dropdown; fall back to the dropdown's parent. */
+	Window *front = FrontWindowAfterDropdown(_pending_dropdown_parent);
+	_pending_dropdown_parent = nullptr;
+	if (front == nullptr) front = FrontWindowWithCandidates();
 	if (front == nullptr) return;
 
 	auto candidates = CollectWindowCandidates(front);

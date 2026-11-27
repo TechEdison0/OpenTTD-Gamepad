@@ -82,21 +82,19 @@ static bool FocusWindowAlive(Window *w)
 	return false;
 }
 
-/**
- * A widget cannot be used if a window in front of it covers its center.
- * This replaces active-window confinement with ordinary screen geometry:
- * D-pad navigation can cross windows, but never reaches controls hidden
- * behind a dialog such as the New Game window.
- */
-static bool IsPointCovered(Point pt, const Window *owner)
+/** Suppress the main-menu root while a dialog with its own widgets is open. */
+static bool IsWindowSuppressed(const Window *w)
 {
-	for (Window *w : Window::IterateFromFront()) {
-		if (w == owner || IsExcludedFromGamepadFocus(w)) continue;
-		if (w->window_class == WindowClass::ToolTips) continue;
-		if (w->IsShaded()) continue;
+	if (IsExcludedFromGamepadFocus(w)) return true;
+	if (w->window_class != WindowClass::SelectGame) return false;
 
-		if (pt.x >= w->left && pt.x < w->left + w->width &&
-				pt.y >= w->top && pt.y < w->top + w->height) return true;
+	for (Window *other : Window::IterateFromFront()) {
+		if (other == w || IsExcludedFromGamepadFocus(other)) continue;
+		if (other->window_class == WindowClass::ToolTips || other->window_class == WindowClass::MainWindow) continue;
+		for (const auto &pair : other->widget_lookup) {
+			NWidgetCore *nw = dynamic_cast<NWidgetCore *>(pair.second);
+			if (IsFocusableWidget(nw)) return true;
+		}
 	}
 	return false;
 }
@@ -104,8 +102,6 @@ static bool IsPointCovered(Point pt, const Window *owner)
 static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, WidgetID widget, Rect rect)
 {
 	if (rect.Width() <= 0 || rect.Height() <= 0) return;
-	Point centre{(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2};
-	if (IsPointCovered(centre, w)) return;
 	candidates.push_back({w, widget, rect});
 }
 
@@ -113,7 +109,7 @@ static void AddCandidate(std::vector<FocusCandidate> &candidates, Window *w, Wid
 static std::vector<FocusCandidate> CollectWindowCandidates(Window *w)
 {
 	std::vector<FocusCandidate> candidates;
-	if (IsExcludedFromGamepadFocus(w)) return candidates;
+	if (IsWindowSuppressed(w)) return candidates;
 
 	if (w->window_class == WindowClass::DropdownMenu) {
 		int count = GetDropdownFocusItemCount(w);

@@ -41,9 +41,9 @@ file records only what this fork adds.
 - Focus movement uses rendered rectangle edges with wrap-around and snaps the crosshair to the
   focused widget. Candidates are collected globally, so newly opened viewport, toolbar and build
   windows are reachable without any forced focus transfer.
-- Candidate centers covered by a higher window are skipped. This prevents activating controls
-  behind a dialog such as New Game while still allowing D-pad navigation across all visible
-  windows.
+- The main-menu root is suppressed while another window with focusable widgets is open. This
+  prevents activating main-menu controls behind a dialog such as New Game without confining
+  D-pad navigation or filtering in-game windows by z-order.
 - Dropdown menu rows are now individual focus candidates; the red ring highlights one row
   instead of the whole list, and A selects that row.
 - Gamepad dropdown focus disables OpenTTD's cursor-driven `drag_mode` and no longer snaps

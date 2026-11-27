@@ -17,6 +17,8 @@ file records only what this fork adds.
   deadzones, and slow/normal/fast dropdowns per stick. Rows are gamepad-focusable.
 - Controller diagnostics window follows the current dark panel/caption-string style and
   remains toggleable by build flag, compiled off by default.
+- Speed dropdowns now open through an explicit row anchor instead of treating the custom
+  canvas as a dropdown button widget.
 
 ## 2026-11-27 — `v20261127-c5-navigation-refinements` (C5 complete)
 

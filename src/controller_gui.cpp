@@ -638,7 +638,10 @@ private:
 				list.push_back(MakeDropDownListStringItem("Normal", 1));
 				list.push_back(MakeDropDownListStringItem("Fast", 2));
 				int selected = static_cast<int>(row == CO_SPEED_LS ? opt.left_stick_speed : opt.right_stick_speed);
-				ShowDropDownList(this, std::move(list), selected, WID_CO_CANVAS);
+				Rect canvas = this->GetWidget<NWidgetBase>(WID_CO_CANVAS)->GetCurrentRect();
+				int y = canvas.top + 2 + static_cast<int>(row) * static_cast<int>(this->row_height);
+				Rect anchor{canvas.right - 165, y, canvas.right - 6, y + static_cast<int>(this->row_height) - 1};
+				ShowDropDownListAt(this, std::move(list), selected, WID_CO_CANVAS, anchor, Colours::Grey);
 				return;
 			}
 			default: return;

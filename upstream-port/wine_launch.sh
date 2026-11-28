@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch the Windows OpenTTD-Gamepad build under Wine, and configure Wine so that
+# Launch the Windows OpenTTD-Handheld build under Wine, and configure Wine so that
 # gamepads are exposed to DirectInput/XInput first. Safe to run repeatedly.
 #
 # The script lives next to openttd.exe, so double-clicking it starts the game from

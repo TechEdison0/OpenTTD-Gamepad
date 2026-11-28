@@ -15,8 +15,8 @@ OpenTTD documentation, downloads and support live in the
 **[upstream OpenTTD README](https://github.com/OpenTTD/OpenTTD/blob/master/README.md)**.
 Everything below describes only what this fork adds.
 
-[![Desktop build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml/badge.svg?branch=1.x)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-desktop.yml?query=branch%3A1.x)
-[![Android build](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml/badge.svg?branch=1.x)](https://github.com/TechEdison0/OpenTTD-Gamepad/actions/workflows/ci-android.yml?query=branch%3A1.x)
+[![Desktop build](https://github.com/TechEdison0/OpenTTD-Handheld/actions/workflows/ci-desktop.yml/badge.svg?branch=1.x)](https://github.com/TechEdison0/OpenTTD-Handheld/actions/workflows/ci-desktop.yml?query=branch%3A1.x)
+[![Android build](https://github.com/TechEdison0/OpenTTD-Handheld/actions/workflows/ci-android.yml/badge.svg?branch=1.x)](https://github.com/TechEdison0/OpenTTD-Handheld/actions/workflows/ci-android.yml?query=branch%3A1.x)
 ![License](https://img.shields.io/badge/license-GPL--2.0--only-blue)
 
 ## Features
@@ -84,14 +84,14 @@ build falls back to `extmidi` (an external player such as `timidity`) or silence
 
 ## Download
 
-The current stable release is **[v1.0](https://github.com/TechEdison0/OpenTTD-Gamepad/releases/tag/v1.0)**.
+The current stable release is **[v1.0](https://github.com/TechEdison0/OpenTTD-Handheld/releases/tag/v1.0)**.
 Download the artifact for your platform from that release:
 
 | Platform | File |
 |---|---|
-| Linux x86_64 | [`OpenTTD-Handheld-v1.0-linux-x86_64.zip`](https://github.com/TechEdison0/OpenTTD-Gamepad/releases/download/v1.0/OpenTTD-Handheld-v1.0-linux-x86_64.zip) |
-| Windows x86_64 | [`OpenTTD-Handheld-v1.0-win64.zip`](https://github.com/TechEdison0/OpenTTD-Gamepad/releases/download/v1.0/OpenTTD-Handheld-v1.0-win64.zip) |
-| Android arm64-v8a | [`OpenTTD-Handheld-v1.0-android-arm64-v8a-release.apk`](https://github.com/TechEdison0/OpenTTD-Gamepad/releases/download/v1.0/OpenTTD-Handheld-v1.0-android-arm64-v8a-release.apk) |
+| Linux x86_64 | [`OpenTTD-Handheld-v1.0-linux-x86_64.zip`](https://github.com/TechEdison0/OpenTTD-Handheld/releases/download/v1.0/OpenTTD-Handheld-v1.0-linux-x86_64.zip) |
+| Windows x86_64 | [`OpenTTD-Handheld-v1.0-win64.zip`](https://github.com/TechEdison0/OpenTTD-Handheld/releases/download/v1.0/OpenTTD-Handheld-v1.0-win64.zip) |
+| Android arm64-v8a | [`OpenTTD-Handheld-v1.0-android-arm64-v8a-release.apk`](https://github.com/TechEdison0/OpenTTD-Handheld/releases/download/v1.0/OpenTTD-Handheld-v1.0-android-arm64-v8a-release.apk) |
 
 Run Linux with `./openttd`. For Windows, double-click `wine_launch.sh` to run under
 Wine, or launch `openttd.exe` directly. The Windows executable is **unsigned**:

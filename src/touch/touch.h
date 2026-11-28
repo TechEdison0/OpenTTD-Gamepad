@@ -16,8 +16,8 @@
 
 /** The active touch feature set. */
 enum class TouchMode : uint8_t {
-	Disabled, ///< Absolute tap position with tap-to-click only.
-	Trackpad, ///< Planned full gesture mode; reserved for a later chunk.
+	Absolute, ///< Absolute tap position with tap-to-click only (minimal mode).
+	Trackpad, ///< Full gesture mode (trackpad-like); reserved for a later chunk.
 };
 
 void TouchInit();
@@ -25,5 +25,6 @@ void TouchHandleEvent(const SDL_Event &ev);
 void TouchTick();
 TouchMode TouchGetMode();
 void TouchSetMode(TouchMode mode);
+void TouchSaveMode();
 
 #endif /* TOUCH_H */

@@ -6090,4 +6090,9 @@ STR_CONTROLLER_MAPPING_BUTTON                                   :{BLACK}Controll
 STR_CONTROLLER_GUIDE_CAPTION                                    :{BLACK}Controller Guide
 STR_CONTROLLER_OPTIONS_BUTTON                                   :{BLACK}Controller Options
 STR_CONTROLLER_OPTIONS_CAPTION                                  :{BLACK}Controller Options
+STR_CONTROLLER_TOUCH_BUTTON                                     :{BLACK}Touch
+STR_TOUCH_SETTINGS_CAPTION                                      :{BLACK}Touch Settings
+STR_TOUCH_MODE_TRACKPAD                                         :{BLACK}Trackpad
+STR_TOUCH_MODE_ABSOLUTE                                         :{BLACK}Absolute
+STR_TOUCH_MODE_TOOLTIP                                          :{BLACK}Toggle between Trackpad and Absolute touch mode
 STR_GAMEPAD_DEBUG_CAPTION                                       :{BLACK}Controller Diagnostics

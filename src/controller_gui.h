@@ -20,4 +20,7 @@ void ShowControllerWindow();
 /** Open the controller guide window. */
 void ShowControllerGuideWindow();
 
+/** Open the touch settings window (Android-only). */
+void ShowTouchSettingsWindow();
+
 #endif /* CONTROLLER_GUI_H */

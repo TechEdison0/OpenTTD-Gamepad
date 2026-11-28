@@ -10,18 +10,42 @@
 #include "../stdafx.h"
 #include "../gfx_func.h"
 #include "../gamepad/actions.h"
+#include "../gamepad/controller_config.h"  // _controller_file
+#include "../gamepad/gamepad.h"            // GetGamepadSelection
 #include "touch.h"
 #include "touch_absolute.h"
+#include "../ini_file.h"
 
 #include "../safeguards.h"
 
-/** Active touch feature set. T0 has no GUI or persistence, so this starts Disabled. */
-static TouchMode _touch_mode = TouchMode::Disabled;
+/** Active touch feature set. Default set by TouchInit from controller.cfg or controller profile. */
+static TouchMode _touch_mode = TouchMode::Absolute;
 
-/** Initialise the touch backend. */
+/** Initialise the touch backend: load persisted mode or default based on controller profile. */
 void TouchInit()
 {
-	_touch_mode = TouchMode::Disabled;
+	IniFile ini{};
+	ini.LoadFromDisk(_controller_file, Subdirectory::None);
+
+	if (const IniGroup *settings = ini.GetGroup("controller")) {
+		if (const IniItem *item = settings->GetItem("touch_mode")) {
+			if (item->value.has_value()) {
+				int val = std::stoi(*item->value);
+				if (val >= 0 && val <= static_cast<int>(TouchMode::Trackpad)) {
+					_touch_mode = static_cast<TouchMode>(val);
+				}
+			}
+		}
+	}
+
+	// If not set from config, default based on whether a controller profile is loaded.
+	if (_touch_mode == TouchMode::Absolute) { // default static value
+		int sel = GetGamepadSelection();
+		if (sel < 0) {
+			_touch_mode = TouchMode::Trackpad;
+		}
+	}
+
 	TouchAbsoluteReset();
 }
 
@@ -43,7 +67,7 @@ void TouchHandleEvent(const SDL_Event &ev)
 	NotifyTouchActivity();
 
 	switch (_touch_mode) {
-		case TouchMode::Disabled:
+		case TouchMode::Absolute:
 			TouchAbsoluteHandleEvent(ev);
 			break;
 
@@ -71,4 +95,14 @@ void TouchSetMode(TouchMode mode)
 {
 	_touch_mode = mode;
 	TouchAbsoluteReset();
+}
+
+/** Persist the current touch mode to controller.cfg. */
+void TouchSaveMode()
+{
+	IniFile ini{};
+	ini.LoadFromDisk(_controller_file, Subdirectory::None);
+	IniGroup &settings = ini.GetOrCreateGroup("controller");
+	settings.GetOrCreateItem("touch_mode").SetValue(fmt::format("{}", static_cast<int>(_touch_mode)));
+	ini.SaveToDisk(_controller_file);
 }

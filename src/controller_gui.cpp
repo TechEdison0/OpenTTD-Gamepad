@@ -98,6 +98,7 @@ enum ControllerLaunchWidgets {
 	WID_CL_GUIDE,    ///< Open the controller function guide.
 	WID_CL_MAPPING,  ///< Open controller selection and mapping.
 	WID_CL_OPTIONS,  ///< Open controller options.
+	WID_CL_TOUCH,    ///< Open touch settings (Android-only).
 	WID_CL_BACKGROUND, ///< Dark window background.
 };
 
@@ -115,6 +116,9 @@ static constexpr std::initializer_list<NWidgetPart> _controller_launch_widgets =
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_GUIDE), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_GUIDE_BUTTON, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_MAPPING), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_MAPPING_BUTTON, STR_NULL),
 				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_OPTIONS), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_OPTIONS_BUTTON, STR_NULL),
+#ifdef __ANDROID__
+				NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_CL_TOUCH), SetMinimalSize(190, 20), SetStringTip(STR_CONTROLLER_TOUCH_BUTTON, STR_NULL),
+#endif
 			EndContainer(),
 		EndContainer(),
 	EndContainer(),
@@ -364,12 +368,14 @@ struct ControllerLaunchWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING || widget == WID_CL_OPTIONS) {
+		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING || widget == WID_CL_OPTIONS || widget == WID_CL_TOUCH) {
 			this->Close();
 			if (widget == WID_CL_GUIDE) {
 				ShowControllerGuideWindow();
 			} else if (widget == WID_CL_MAPPING) {
 				ShowControllerMappingWindow();
+			} else if (widget == WID_CL_TOUCH) {
+				ShowTouchSettingsWindow();
 			} else {
 				ShowControllerOptionsWindow();
 			}

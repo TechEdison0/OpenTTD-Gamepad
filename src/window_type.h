@@ -763,6 +763,11 @@ enum class WindowClass : uint16_t {
 	 */
 	ControllerOptions,
 
+	/**
+	 * Touch settings window (Android-only), added by T1.
+	 */
+	TouchSettings,
+
 	Invalid = 0xFFFF, ///< Invalid window.
 };
 

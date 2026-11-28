@@ -56,7 +56,8 @@ public class OpenTTDActivity extends SDLActivity {
 
     @Override
     protected String[] getLibraries() {
-        return new String[] { "hidapi", "main" };
+        /* SDL2 and all other dependencies are linked statically into libmain.so. */
+        return new String[] { "main" };
     }
 
     /**

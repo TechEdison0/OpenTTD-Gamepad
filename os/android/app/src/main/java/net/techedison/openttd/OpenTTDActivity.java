@@ -9,8 +9,13 @@ package net.techedison.openttd;
 
 import org.libsdl.app.SDLActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Entry point for the game. Storage configuration is handled by the launcher
@@ -18,24 +23,35 @@ import android.util.Log;
  */
 public class OpenTTDActivity extends SDLActivity {
     private static final String TAG = "OpenTTD Handheld";
-    private static OpenTTDActivity instance = null;
+    private static volatile boolean running = false;
+
+    static boolean isRunning() {
+        return running;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        /* The process may be recreated straight into this activity; make sure the
+         * game data is in place before SDL starts the native thread. */
+        if (!DataInstaller.isInstalled(this)) {
+            super.onCreate(savedInstanceState);
+            startActivity(new Intent(this, LauncherActivity.class));
+            finish();
+            return;
+        }
+
+        /* Must be done before the native code starts. */
+        StorageLocation.applyForNative(this);
         Log.v(TAG, "Starting OpenTTD Handheld");
+        running = true;
         super.onCreate(savedInstanceState);
-        instance = this;
     }
 
     @Override
     protected void onDestroy() {
         Log.v(TAG, "Stopping OpenTTD Handheld");
-        instance = null;
+        running = false;
         super.onDestroy();
-    }
-
-    static boolean isRunning() {
-        return instance != null;
     }
 
     @Override
@@ -43,10 +59,23 @@ public class OpenTTDActivity extends SDLActivity {
         return new String[] { "hidapi", "main" };
     }
 
+    /**
+     * Command line arguments for OpenTTD. Debug arguments can be passed with
+     * {@code adb shell am start -n net.techedison.openttd/.LauncherActivity --es args "-d driver=3"}.
+     * The bundled soundfont is appended for the FluidSynth driver.
+     */
     @Override
-    protected String getArguments() {
-        String args = StorageLocation.getArguments(this);
-        Log.v(TAG, "Arguments: " + args);
-        return args;
+    protected String[] getArguments() {
+        List<String> args = new ArrayList<>();
+        String extra = getIntent().getStringExtra(LauncherActivity.EXTRA_ARGS);
+        if (extra != null && !extra.trim().isEmpty()) {
+            Collections.addAll(args, extra.trim().split("\\s+"));
+        }
+        String soundfont = SoundFont.path(this);
+        if (soundfont != null) {
+            args.add("-m");
+            args.add("fluidsynth:soundfont=" + soundfont);
+        }
+        return args.toArray(new String[0]);
     }
 }

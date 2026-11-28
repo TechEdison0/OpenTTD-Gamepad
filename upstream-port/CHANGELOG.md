@@ -12,6 +12,11 @@ file records only what this fork adds.
 - `1.x` is the v1.x release branch. Fixes made there are merged back to `main`.
 - Windows v1.0 packages ship unsigned with documented SmartScreen/Smart App Control
   warnings; no self-signed certificate is used.
+- OS window caption and English main-menu footer now display the literal text
+  `OpenTTD Handheld 1.0`; all targets are built with `GAMEPAD_DEBUG_OFF`.
+- README restructured around Features, Dependencies, Download, Layout, Compiling and
+  Credits. The feature list describes the trackpad based Android touch interface,
+  omits dual-screen claims, and embeds the supplied v1.0 screenshots.
 
 ## 2026-11-27 — `v20261127-c6-axis-configuration-menu` (C6 complete)
 

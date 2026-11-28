@@ -3,10 +3,10 @@
 Fork-only changelog. Upstream OpenTTD changes belong to the upstream project; this
 file records only what this fork adds.
 
-## 2026-11-27 — `v1.0` (release branch)
+## 2026-11-28 — `v1.0` (stable release)
 
-- Project rebranded to OpenTTD-Handheld; Android package namespace is now
-  `net.techedison.openttd`.
+- Project and GitHub repository renamed to OpenTTD-Handheld; Android package namespace
+  is now `net.techedison.openttd`.
 - Android release builds are signed with a project-specific release keystore stored only
   in local `build_keys/`; the debug signing fallback remains for local builds.
 - `1.x` is the v1.x release branch. Fixes made there are merged back to `main`.

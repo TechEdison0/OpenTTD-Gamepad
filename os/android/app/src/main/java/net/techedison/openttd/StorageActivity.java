@@ -11,10 +11,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
-/**
- * The app settings as a screen of their own, for the launcher shortcut
- * (long-press the app icon). In game they are shown as a dialog instead.
- */
+/** Storage location screen, opened from the launcher shortcut. */
 public class StorageActivity extends Activity implements AppSettings.Host {
     private AppSettings settings;
 
@@ -45,7 +42,7 @@ public class StorageActivity extends Activity implements AppSettings.Host {
 
     @Override
     public void restartGame() {
-        /* The game is in the background, and was saved when it went there. */
+        /* The game is in the background and was saved when it went there. */
         RestartActivity.restart(this);
         android.os.Process.killProcess(android.os.Process.myPid());
     }

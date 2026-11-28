@@ -5,14 +5,14 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_touch.cpp Touch screen used as a trackpad, for the SDL2 video driver. */
+/** @file touch_trackpad.cpp Reference implementation of the donor trackpad gesture engine. */
 
 #include "../stdafx.h"
 #include "../gfx_func.h"
 #include "../gamepad/actions.h"
 #include "../window_func.h"
 #include "../core/math_func.hpp"
-#include "sdl2_touch.h"
+#include "touch_trackpad.h"
 
 #include "../safeguards.h"
 

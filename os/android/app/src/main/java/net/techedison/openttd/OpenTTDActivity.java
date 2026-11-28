@@ -7,160 +7,46 @@
 
 package net.techedison.openttd;
 
-import android.app.Dialog;
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.RelativeLayout;
-
-import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import android.os.Bundle;
+import android.util.Log;
 
 /**
- * The game itself. The native code lives in libmain.so (built from the
- * OpenTTD CMake project); SDL's activity takes care of the surface, input,
- * audio and the native main thread.
+ * Entry point for the game. Storage configuration is handled by the launcher
+ * before the game starts; the game itself uses only OpenTTD's own menus.
  */
 public class OpenTTDActivity extends SDLActivity {
-    /** Whether the game is running in this process. */
-    private static volatile boolean running = false;
-
-    static boolean isRunning() {
-        return running;
-    }
+    private static final String TAG = "OpenTTD Handheld";
+    private static OpenTTDActivity instance = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        /* The process may be recreated straight into this activity, e.g. after
-         * the app was updated; make sure the game data is in place first. */
-        if (!DataInstaller.isInstalled(this)) {
-            super.onCreate(savedInstanceState);
-            startActivity(new Intent(this, LauncherActivity.class));
-            finish();
-            return;
-        }
-        /* Must be done before the native code starts. */
-        StorageLocation.applyForNative(this);
-        running = true;
+        Log.v(TAG, "Starting OpenTTD Handheld");
         super.onCreate(savedInstanceState);
+        instance = this;
     }
 
     @Override
     protected void onDestroy() {
-        running = false;
+        Log.v(TAG, "Stopping OpenTTD Handheld");
+        instance = null;
         super.onDestroy();
     }
 
-    /**
-     * Command line arguments for OpenTTD can be passed for debugging, e.g.
-     * {@code adb shell am start -n net.techedison.openttd/.LauncherActivity --es args "-d driver=3"}.
-     * <p>
-     * The bundled General-MIDI soundfont is appended as a driver parameter so the
-     * FluidSynth music driver can load it on Android, where there is no system font.
-     */
-    @Override
-    protected String[] getArguments() {
-        List<String> args = new ArrayList<>();
-        String extra = getIntent().getStringExtra(LauncherActivity.EXTRA_ARGS);
-        if (extra != null && !extra.trim().isEmpty()) {
-            Collections.addAll(args, extra.trim().split("\\s+"));
-        }
-        String soundfont = SoundFont.path(this);
-        if (soundfont != null) {
-            args.add("-m");
-            args.add("fluidsynth:soundfont=" + soundfont);
-        }
-        return args.toArray(new String[0]);
-    }
-
-    /** The app settings dialog, while shown. */
-    private Dialog settings_dialog;
-    private AppSettings settings;
-
-    /** Called from the game's menus (ShowAndroidAppSettings in android_main.cpp), on the game thread. */
-    public void openAppSettings() {
-        runOnUiThread(this::showAppSettings);
-    }
-
-    /** Show the app settings as a full screen dialog over the game; the game pauses meanwhile. */
-    private void showAppSettings() {
-        if (settings_dialog != null) return;
-
-        settings = new AppSettings(this, new AppSettings.Host() {
-            @Override
-            public boolean isGameRunning() {
-                return true;
-            }
-
-            @Override
-            public void restartGame() {
-                /* The game saves and quits once it runs again; then android_main.cpp calls restartApp. */
-                nativeRequestRestart();
-                close();
-            }
-
-            @Override
-            public void close() {
-                if (settings_dialog != null) settings_dialog.dismiss();
-            }
-
-            @Override
-            public boolean canEditControls() {
-                return true;
-            }
-
-            @Override
-            public void editControls() {
-                close();
-                if (controls != null) controls.startEditing();
-            }
-        });
-
-        settings_dialog = new Dialog(this, R.style.AppSettingsDialog);
-        settings_dialog.setContentView(settings.createView(settings_dialog.getContext()));
-        settings_dialog.setOnDismissListener(d -> {
-            settings_dialog = null;
-            settings = null;
-        });
-        Window window = settings_dialog.getWindow();
-        if (window != null) window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
-        settings_dialog.show();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (settings != null) settings.onResume();
-        if (controls == null && mLayout instanceof RelativeLayout) controls = new OnScreenControls(this, (RelativeLayout)mLayout);
-        if (controls != null) controls.refresh();
-    }
-
-    /** The on-screen joystick and buttons over the game. */
-    private OnScreenControls controls;
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (settings != null) settings.onActivityResult(requestCode, resultCode, data);
-    }
-
-    /** Ask the game to save and quit, so it can be restarted; see android_main.cpp. */
-    private static native void nativeRequestRestart();
-
-    /** Called from android_main.cpp, after the game quit because of #nativeRequestRestart. */
-    public static void restartApp() {
-        RestartActivity.restart(SDL.getContext());
+    static boolean isRunning() {
+        return instance != null;
     }
 
     @Override
     protected String[] getLibraries() {
-        /* SDL2 and all other dependencies are linked statically into libmain.so. */
-        return new String[] { "main" };
+        return new String[] { "hidapi", "main" };
+    }
+
+    @Override
+    protected String getArguments() {
+        String args = StorageLocation.getArguments(this);
+        Log.v(TAG, "Arguments: " + args);
+        return args;
     }
 }

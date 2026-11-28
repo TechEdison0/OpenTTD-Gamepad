@@ -33,14 +33,19 @@ git -C vendor/psyycker diff --binary 07b339c0aa HEAD > upstream-port/psyycker-rc
   landing page and release automation).
 - Rewrote `os/android/README.md` for this fork (branch model, releases).
 - Kept `LICENSE` (GPL-2.0 text); the engine remains GPL-2.0 under `COPYING.md`.
-- Added explicit `<chrono>`, `<cstdint>` and `<vector>` includes to
-  `src/video/sdl2_touch.h`; the donor relied on transitive includes that this
-  tree does not provide (Linux build failed on `Clock`/`std::vector`).
+- Added explicit includes to the donor trackpad source; the donor relied on transitive
+  includes that this tree does not provide (Linux build failed on `Clock`/`std::vector`).
+  That engine is now an uncompiled reference at `src/touch/touch_trackpad.{cpp,h}`.
 - Pinned the Android CMake to the SDK package `cmake;3.31.6`
   (`os/android/app/build.gradle.kts`) so the host's `/usr/bin/cmake` cannot shadow
   it; documented `cmake.dir` accordingly.
-- Everything else was applied verbatim; later local fixes are listed here as they
-  are made.
+- Everything else was applied verbatim on import. Later local changes are listed here as
+  they are made.
+- T0 reclassified the donor glue as **research**: the Android build layer is no longer the
+  touch architecture. `src/touch/` is the source-side backend, following the gamepad module
+  style. Donor on-screen joystick/mouse/hotkey controls and their native JNI hooks were
+  removed. In-game Android settings entries were removed; storage configuration remains in
+  the launcher shortcut and was rewritten in OpenTTD Handheld style.
 
 ## What the patch touches
 

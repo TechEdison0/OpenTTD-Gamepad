@@ -23,7 +23,7 @@ the license files beside each directory.
 |---|---|---|
 | psyycker/openttd-android Gradle/NDK/vcpkg layer | GPL-2.0-only | https://github.com/psyycker/openttd-android @ `9407a7f` |
 | SDL Java/bootstrap classes under `os/android/app/src/main/java/org/libsdl/` | zlib | https://libsdl.org/ |
-| This fork's changes (Android activities, `SoundFont.java`, Windows build probe) | GPL-2.0-only | this repository |
+| This fork's changes (Android storage activities, source-side `touch/` backend, `SoundFont.java`, Windows build probe) | GPL-2.0-only | this repository |
 
 ## Bundled data
 

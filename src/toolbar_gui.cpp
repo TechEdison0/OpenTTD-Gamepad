@@ -74,10 +74,6 @@
 
 #include "table/strings.h"
 
-#ifdef __ANDROID__
-#	include "os/android/android.h"
-#endif
-
 #include "dropdown_common_type.h"
 
 #include "safeguards.h"
@@ -269,7 +265,6 @@ enum class OptionMenuEntries : uint8_t {
 	FullDetails, ///< Toggle full details.
 	TransparentBuildings, ///< Toggle buildings transparency.
 	TransparentStationSigns, ///< Toggle transparency of signs and names.
-	AndroidAppSettings, ///< Open the settings of the Android app.
 	ControllerGuide, ///< Open the controller guide.
 };
 
@@ -297,7 +292,6 @@ static CallBackFunction ToolbarOptionsClick(Window *w)
 	}
 	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS, OptionMenuEntries::Transparencies));
 #ifdef __ANDROID__
-	list.push_back(MakeDropDownListStringItem(STR_SETTINGS_MENU_ANDROID_APP_SETTINGS, OptionMenuEntries::AndroidAppSettings));
 #endif
 	list.push_back(MakeDropDownListDividerItem());
 	list.push_back(MakeDropDownListCheckedItem(_display_opt.Test(DisplayOption::ShowTownNames), STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED, OptionMenuEntries::ShowTownNames));
@@ -336,10 +330,6 @@ static CallBackFunction MenuClickSettings(int index)
 		case OptionMenuEntries::SandboxOptions: ShowCheatWindow(); break;
 		case OptionMenuEntries::Transparencies: ShowTransparencyToolbar(); break;
 		case OptionMenuEntries::ControllerGuide: ShowControllerGuideWindow(); return CallBackFunction::None;
-#ifdef __ANDROID__
-		case OptionMenuEntries::AndroidAppSettings: ShowAndroidAppSettings(); return CallBackFunction::None;
-#endif
-
 		case OptionMenuEntries::ShowTownNames: _display_opt.Flip(DisplayOption::ShowTownNames); break;
 		case OptionMenuEntries::ShowStationNames: _display_opt.Flip(DisplayOption::ShowStationNames); break;
 		case OptionMenuEntries::ShowTrainStationNames: _facility_display_opt.Flip(StationFacility::Train); break;

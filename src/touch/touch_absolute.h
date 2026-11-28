@@ -5,14 +5,14 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file android.h Functions specific to the Android app. */
+/** @file touch_absolute.h Minimal absolute-tap touch backend. */
 
-#ifndef ANDROID_H
-#define ANDROID_H
+#ifndef TOUCH_ABSOLUTE_H
+#define TOUCH_ABSOLUTE_H
 
-void ShowAndroidAppSettings();
-bool AndroidRestartRequested();
-void AndroidGetJoystick(float &x, float &y);
-bool AndroidPopMouseButtonEvent(int &button, bool &down);
+#include <SDL.h>
 
-#endif /* ANDROID_H */
+void TouchAbsoluteReset();
+void TouchAbsoluteHandleEvent(const SDL_Event &ev);
+
+#endif /* TOUCH_ABSOLUTE_H */

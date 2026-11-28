@@ -23,7 +23,7 @@
 #ifdef __ANDROID__
 #	include "../network/network.h"
 #	include "../saveload/saveload_func.h"
-#	include "../os/android/android.h"
+#	include "../touch/touch.h"
 #endif
 #include "sdl2_v.h"
 #include <SDL.h>
@@ -448,11 +448,11 @@ bool VideoDriver_SDL_Base::PollEvent()
 
 	switch (ev.type) {
 		case SDL_MOUSEMOTION: {
-			if (this->touch_trackpad && ev.motion.which == SDL_TOUCH_MOUSEID) break;
-			/* SDL repeats its last known mouse position when the window regains focus;
-			 * without a physical mouse that is (0, 0), which would move the trackpad cursor. */
-			if (this->touch_trackpad && ev.motion.xrel == 0 && ev.motion.yrel == 0) break;
+			/* Ignore synthetic mouse events from touch and the zero-position events SDL
+			 * replays when an Android window regains focus without a physical mouse. */
 #ifdef __ANDROID__
+			if (ev.motion.which == SDL_TOUCH_MOUSEID) break;
+			if (ev.motion.xrel == 0 && ev.motion.yrel == 0) break;
 			/* The mouse pointer cannot be warped on Android; it is captured while the cursor is fixed. */
 			this->SyncPointerCapture();
 			if (SDL_GetRelativeMouseMode()) {
@@ -501,7 +501,9 @@ bool VideoDriver_SDL_Base::PollEvent()
 		}
 
 		case SDL_MOUSEBUTTONDOWN:
-			if (this->touch_trackpad && ev.button.which == SDL_TOUCH_MOUSEID) break;
+#ifdef __ANDROID__
+			if (ev.button.which == SDL_TOUCH_MOUSEID) break;
+#endif
 			if (_rightclick_emulate && SDL_GetModState() & KMOD_CTRL) {
 				ev.button.button = SDL_BUTTON_RIGHT;
 			}
@@ -522,7 +524,9 @@ bool VideoDriver_SDL_Base::PollEvent()
 			break;
 
 		case SDL_MOUSEBUTTONUP:
-			if (this->touch_trackpad && ev.button.which == SDL_TOUCH_MOUSEID) break;
+#ifdef __ANDROID__
+			if (ev.button.which == SDL_TOUCH_MOUSEID) break;
+#endif
 			if (_rightclick_emulate) {
 				_right_button_down = false;
 				_left_button_down = false;
@@ -551,7 +555,9 @@ bool VideoDriver_SDL_Base::PollEvent()
 		case SDL_FINGERDOWN:
 		case SDL_FINGERUP:
 		case SDL_FINGERMOTION:
-			if (this->touch_trackpad) this->trackpad.HandleEvent(ev);
+#ifdef __ANDROID__
+			TouchHandleEvent(ev);
+#endif
 			break;
 
 		case SDL_KEYDOWN: // Toggle full-screen on ALT + ENTER/F
@@ -636,7 +642,7 @@ static std::optional<std::string_view> InitializeSDL()
 	SDL_SetHint(SDL_HINT_APP_NAME, "OpenTTD");
 #endif
 #ifdef __ANDROID__
-	/* Touch input is handled as a trackpad by us (see sdl2_touch.cpp), not as mouse clicks by SDL. */
+	/* Touch events are handled by the source-side touch backend. */
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 	SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
 	/* Deliver the back button as a key, so it closes windows instead of the app. */
@@ -702,9 +708,8 @@ std::optional<std::string_view> VideoDriver_SDL_Base::Start(const StringList &pa
 	this->edit_box_focused = false;
 
 #ifdef __ANDROID__
-	this->touch_trackpad = true;
+	TouchInit();
 #endif
-	if (this->touch_trackpad) this->trackpad.Initialize();
 
 #ifdef __EMSCRIPTEN__
 	this->is_game_threaded = false;
@@ -751,62 +756,13 @@ _shift_pressed = _shift_pressed || gamepad_shift;
 
 	if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
 
-	if (this->touch_trackpad) this->trackpad.Tick();
 #ifdef __ANDROID__
 	this->SyncPointerCapture();
-
-	this->ScrollWithJoystick();
-
-	/* On-screen left/right mouse buttons (see ClickButtonView.java), acting at the cursor. */
-	int button;
-	bool down;
-	while (AndroidPopMouseButtonEvent(button, down)) {
-		_cursor.in_window = true;
-		if (button == 0) {
-			_left_button_down = down;
-			if (!down) _left_button_clicked = false;
-		} else {
-			_right_button_down = down;
-			if (down) _right_button_clicked = true;
-		}
-		HandleMouseEvents();
-	}
-
-	/* The app settings changed something that needs a restart; save and quit, android_main.cpp restarts the app. */
-	if (AndroidRestartRequested()) {
-		SaveBackgroundGame();
-		_exit_game = true;
-	}
 #endif
-}
-
+	HandleMouseEvents();
 #ifdef __ANDROID__
-/** Scroll the map with the on-screen joystick; the further it is pushed, the faster. */
-void VideoDriver_SDL_Base::ScrollWithJoystick()
-{
-	/* At full deflection, scroll a screen width per second. */
-	const float max_speed = static_cast<float>(_screen.width);
-
-	auto now = std::chrono::steady_clock::now();
-	float dt = std::min(std::chrono::duration<float>(now - this->last_joystick_scroll).count(), 0.1f);
-	this->last_joystick_scroll = now;
-
-	float x, y;
-	AndroidGetJoystick(x, y);
-	if (x == 0 && y == 0) {
-		this->joystick_rest_x = this->joystick_rest_y = 0;
-		return;
-	}
-
-	/* Quadratic response: precise near the centre, fast at the edge. */
-	float strength = std::min(std::hypot(x, y), 1.0f);
-	float dx = x * strength * max_speed * dt + this->joystick_rest_x;
-	float dy = y * strength * max_speed * dt + this->joystick_rest_y;
-	Point delta = { static_cast<int>(dx), static_cast<int>(dy) };
-	this->joystick_rest_x = dx - delta.x;
-	this->joystick_rest_y = dy - delta.y;
-
-	if (delta.x != 0 || delta.y != 0) HandleJoystickScroll(delta);
+	TouchTick();
+#endif
 }
 
 /** Capture the mouse pointer while the cursor is fixed (scrolling), as Android cannot warp the pointer back. */

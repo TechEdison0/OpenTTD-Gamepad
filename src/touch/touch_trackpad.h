@@ -5,10 +5,10 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_touch.h Touch screen used as a trackpad, for the SDL2 video driver. */
+/** @file touch_trackpad.h Reference implementation of the donor trackpad gesture engine. */
 
-#ifndef VIDEO_SDL2_TOUCH_H
-#define VIDEO_SDL2_TOUCH_H
+#ifndef TOUCH_TRACKPAD_H
+#define TOUCH_TRACKPAD_H
 
 #include <SDL.h>
 
@@ -80,4 +80,4 @@ private:
 	void OnFingerUp(const SDL_TouchFingerEvent &ev);
 };
 
-#endif /* VIDEO_SDL2_TOUCH_H */
+#endif /* TOUCH_TRACKPAD_H */

@@ -14,7 +14,7 @@
 #include "../gamepad/gamepad.h"            // GetGamepadSelection
 #include "touch.h"
 #include "touch_absolute.h"
-#include "../ini_file.h"
+#include "../ini_type.h"
 
 #include "../safeguards.h"
 
@@ -30,7 +30,11 @@ void TouchInit()
 	if (const IniGroup *settings = ini.GetGroup("controller")) {
 		if (const IniItem *item = settings->GetItem("touch_mode")) {
 			if (item->value.has_value()) {
-				int val = std::stoi(*item->value);
+				int val = 0;
+				for (char c : *item->value) {
+					if (c < '0' || c > '9') break;
+					val = val * 10 + (c - '0');
+				}
 				if (val >= 0 && val <= static_cast<int>(TouchMode::Trackpad)) {
 					_touch_mode = static_cast<TouchMode>(val);
 				}

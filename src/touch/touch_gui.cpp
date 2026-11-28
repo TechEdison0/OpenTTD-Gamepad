@@ -13,6 +13,7 @@
 #include "../window_gui.h"
 #include "../window_func.h"
 #include "../gfx_func.h"
+#include "../palette_func.h"
 #include "../strings_func.h"
 #include "../table/strings.h"
 #include "../safeguards.h"

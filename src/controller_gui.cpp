@@ -368,15 +368,23 @@ struct ControllerLaunchWindow : Window {
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING || widget == WID_CL_OPTIONS || widget == WID_CL_TOUCH) {
+		if (widget == WID_CL_GUIDE || widget == WID_CL_MAPPING || widget == WID_CL_OPTIONS
+#ifdef __ANDROID__
+			 || widget == WID_CL_TOUCH
+#endif
+) {
 			this->Close();
 			if (widget == WID_CL_GUIDE) {
 				ShowControllerGuideWindow();
 			} else if (widget == WID_CL_MAPPING) {
 				ShowControllerMappingWindow();
-			} else if (widget == WID_CL_TOUCH) {
+			}
+#ifdef __ANDROID__
+			else if (widget == WID_CL_TOUCH) {
 				ShowTouchSettingsWindow();
-			} else {
+			}
+#endif
+			else {
 				ShowControllerOptionsWindow();
 			}
 		}

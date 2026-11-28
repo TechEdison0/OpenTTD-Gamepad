@@ -37,6 +37,7 @@ val commitCount: Int = runCatching {
 
 /* Nightly builds are a separate app, so they can be installed next to the stable release. */
 val nightly = setting("openttd.nightly", "OPENTTD_NIGHTLY").let { it == "1" || it == "true" }
+val buildLabel = setting("openttd.buildLabel", "OPENTTD_BUILD_LABEL") ?: "1.0"
 
 /* Release signing key, e.g. from CI secrets; without it release builds are signed with the debug key. */
 val releaseKeystore = setting("openttd.keystore", "OPENTTD_KEYSTORE")
@@ -79,6 +80,7 @@ android {
                     "-DANDROID_STL=c++_shared",
                     "-DOPTION_USE_ASSERTS=OFF",
                     "-DCMAKE_CXX_FLAGS=-DGAMEPAD_DEBUG_OFF",
+                    "-DOPENTTD_HANDHELD_BUILD_LABEL=$buildLabel",
                 )
                 targets += "openttd"
             }

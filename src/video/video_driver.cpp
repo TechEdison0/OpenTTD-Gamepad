@@ -23,6 +23,7 @@
 #include "video_driver.hpp"
 
 #include "../safeguards.h"
+#include "../handheld_version.h"
 
 bool _video_hw_accel; ///< Whether to consider hardware accelerated video drivers on startup.
 bool _video_vsync; ///< Whether we should use vsync (only if active video driver supports HW acceleration).
@@ -190,5 +191,5 @@ void VideoDriver::SleepTillNextTick()
  */
 /* static */ std::string VideoDriver::GetCaption()
 {
-	return "OpenTTD Handheld 1.0";
+	return std::string("OpenTTD Handheld ") + std::string(HANDHELD_BUILD_LABEL);
 }

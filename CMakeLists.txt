@@ -280,6 +280,15 @@ else()
     set_target_properties(openttd PROPERTIES OUTPUT_NAME "${BINARY_NAME}")
 endif()
 add_executable(openttd_test)
+
+# User-facing build label. Stable releases use "1.0"; pre-release builds override this
+# with the release tag, e.g. -DOPENTTD_HANDHELD_BUILD_LABEL=v20261128-t0-touch-architecture.
+if(NOT DEFINED OPENTTD_HANDHELD_BUILD_LABEL OR OPENTTD_HANDHELD_BUILD_LABEL STREQUAL "")
+    set(OPENTTD_HANDHELD_BUILD_LABEL "1.0")
+endif()
+target_compile_definitions(openttd_lib PRIVATE OPENTTD_HANDHELD_BUILD_LABEL="${OPENTTD_HANDHELD_BUILD_LABEL}")
+target_compile_definitions(openttd PRIVATE OPENTTD_HANDHELD_BUILD_LABEL="${OPENTTD_HANDHELD_BUILD_LABEL}")
+target_compile_definitions(openttd_test PRIVATE OPENTTD_HANDHELD_BUILD_LABEL="${OPENTTD_HANDHELD_BUILD_LABEL}")
 # All other files are added via target_sources()
 
 if(MSVC)

@@ -24,6 +24,8 @@
 #include "statusbar_gui.h"
 #include "linkgraph/linkgraph_gui.h"
 #include "tilehighlight_func.h"
+#include "strings_func.h"
+#include "handheld_version.h"
 #include "hotkeys.h"
 #include "gamepad_debug.h"
 #include "error.h"
@@ -268,7 +270,7 @@ struct MainWindow : Window
 			}
 
 			int text_y = this->height - GetCharacterHeight(FontSize::Normal) * 2;
-			DrawString(0, this->width - 1, text_y, STR_INTRO_VERSION, TextColour::White, {AlignmentH::Centre, AlignmentV::Middle});
+			DrawString(0, this->width - 1, text_y, GetString(STR_INTRO_VERSION, HANDHELD_BUILD_LABEL), TextColour::White, {AlignmentH::Centre, AlignmentV::Middle});
 		}
 	}
 

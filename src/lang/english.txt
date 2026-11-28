@@ -2258,7 +2258,7 @@ STR_VIDEO_DRIVER_ERROR_HARDWARE_ACCELERATION_CRASH              :GPU driver cras
 
 # Intro window
 STR_INTRO_CAPTION                                               :{WHITE}OpenTTD
-STR_INTRO_VERSION                                               :OpenTTD Handheld 1.0
+STR_INTRO_VERSION                                               :OpenTTD Handheld {STRING}
 
 STR_INTRO_NEW_GAME                                              :{BLACK}New Game
 STR_INTRO_LOAD_GAME                                             :{BLACK}Load Game

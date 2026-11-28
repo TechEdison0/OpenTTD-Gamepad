@@ -30,6 +30,35 @@ file records only what this fork adds.
 Gamepads: 8BitDo Ultimate 2 (Bluetooth + USB 2.4 GHz dongle), 8BitDo SN30 Pro (Bluetooth)
 and 8BitDo Ultimate MG (Bluetooth).
 
+## 2026-11-28 — `v20261128-t0-touch-architecture` (pre-release, staged)
+
+**T0 Touch Architecture** — source-forward Android touch backend beside `gamepad/`, donor glue demoted to research, overlay controls removed.
+
+### What's in it
+- New `src/touch/` subsystem beside `src/gamepad/`; Android-only dispatcher and absolute-tap backend (`touch_dispatcher.cpp`, `touch_backend.cpp`).
+- Donor Android trackpad glue retained as uncompiled reference `src/touch/touch_trackpad.cpp`; Java overlay controls, JNI hooks, and the in-game Android settings entry removed.
+- Storage configuration remains only in the launcher shortcut (rewritten in project style); no in-game Android storage UI.
+- Build label mechanism `OPENTTD_HANDHELD_BUILD_LABEL` added via `src/handheld_version.h` and CMake/Gradle; window caption and English footer display `OpenTTD Handheld v20261128-t0-touch-architecture` on all three targets.
+- Linux, Windows, Android builds compile with `GAMEPAD_DEBUG_OFF`; controller diagnostics window absent.
+
+### Fixed
+- Android library loading: `OpenTTDActivity.getLibraries()` now returns only `{ "main" }` (commit `f6e5d6287b`), eliminating `dlopen failed: library "libhidapi.so" not found`.
+- Main-menu footer invalid parameter bug: `STR_INTRO_VERSION` uses `{RAW_STRING}` placeholder for the runtime label (commit `8160c9e288`).
+
+### Verified
+- All three targets built green at the commit tagged `v20261128-t0-touch-architecture`; artifacts staged in `Builds/` with the same display label.
+- Linux x86_64, Windows x86_64 (Wine), Android arm64-v8a APK contain the correct title label and lack `Controller Diagnostics` string.
+- Manual device test pending.
+
+### Release details
+- Upstream pin: OpenTTD `16.0-RC1` (`07b339c0aaeb0a87be9490b2f1c3f17c6b00b837`); Android glue donor: `psyycker/openttd-android` @ `9407a7f`.
+- Fork build commit: the commit tagged `v20261128-t0-touch-architecture` on `main`.
+- Base graphics, sound and music sets are excluded from every package.
+- Licensed under GPL-2.0. This is an experimental pre-release built with AI-assisted work reviewed by the maintainer; it is not endorsed by OpenTTD.
+
+### Next chunk
+T1 — Android-only Touch GUI under Controller menu: Touch On/Off toggle, default Disabled when a saved controller profile loads, Trackpad as default enabled mode, absolute-tap fallback when enabled, capslock-style modifier toggles (Ctrl, Shift, left/right click, Escape).
+
 ## 2026-11-27 — `v20261127-c6-axis-configuration-menu` (C6 complete)
 
 Controller-facing axis configuration: invert, deadzone, speed and stick swap, persisted

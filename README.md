@@ -101,6 +101,18 @@ Install the Android APK directly; it is signed with this fork's release key.
 There is no updater and no nightly channel. Older milestone pre-releases remain on the
 releases page for provenance, but v1.0 is the supported current release.
 
+## Development snapshots
+
+A pre-release **T0 touch architecture** (`v20261128-t0-touch-architecture`) is staged in `Builds/` for manual verification. It is **not published** as a GitHub release.
+
+Highlights:
+- New `src/touch/` subsystem beside `src/gamepad/` providing an Android-only absolute-tap touch backend; the donor overlay controls and in-game Android settings entry are removed.
+- Build label mechanism (`OPENTTD_HANDHELD_BUILD_LABEL`) so the window caption and English main-menu footer display the pre-release tag (`OpenTTD Handheld v20261128-t0-touch-architecture`) on Linux, Windows and Android.
+- Android library loading fixed: only `libmain.so` is loaded; no separate `libhidapi.so`.
+- All three targets compile with `GAMEPAD_DEBUG_OFF`; controller diagnostics window absent.
+
+Artifacts are built from the commit tagged `v20261128-t0-touch-architecture` on `main`. Device testing is pending; the next chunk (T1) will add the Android Touch GUI under the Controller menu.
+
 ## Tested configurations
 
 Maintainer-tested combinations. This is a record of what has actually been checked, not a

@@ -18,6 +18,18 @@ file records only what this fork adds.
   Credits. The feature list describes the trackpad based Android touch interface,
   omits dual-screen claims, and embeds the supplied v1.0 screenshots.
 
+### Tested configurations
+
+| Platform | Tested on |
+|---|---|
+| Linux | KDE Neon |
+| Windows | Wine 9.0 |
+| Android | Galaxy S25 Ultra |
+| Android | Galaxy A11+ |
+
+Gamepads: 8BitDo Ultimate 2 (Bluetooth + USB 2.4 GHz dongle), 8BitDo SN30 Pro (Bluetooth)
+and 8BitDo Ultimate MG (Bluetooth).
+
 ## 2026-11-27 — `v20261127-c6-axis-configuration-menu` (C6 complete)
 
 Controller-facing axis configuration: invert, deadzone, speed and stick swap, persisted
@@ -91,6 +103,16 @@ all three targets after the station direction and foreground-focus refinements.
 Compiled and manually tested on Linux x86_64, Windows x86_64 under Wine and Android
 arm64-v8a on a Samsung Galaxy S25 Ultra. The maintainer confirmed right-stick pan works
 with D-pad focus preserved and the left-stick crosshair active at the same time.
+
+### Tested configurations
+
+| Platform | Tested on |
+|---|---|
+| Android | Retroid Pocket Duo (top screen) |
+| Android | AYN Odin 2 Portal |
+
+Gamepads: Retroid Pocket Controller (USB wired, Duo) and Odin Controller (USB wired, Odin 2
+Portal).
 
 ## 2026-11-26 — C1 bugfix: explicit axis calibration gesture (released in `v20261126-c2-action-layer`)
 

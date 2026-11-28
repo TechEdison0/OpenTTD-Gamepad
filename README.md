@@ -101,6 +101,32 @@ Install the Android APK directly; it is signed with this fork's release key.
 There is no updater and no nightly channel. Older milestone pre-releases remain on the
 releases page for provenance, but v1.0 is the supported current release.
 
+## Tested configurations
+
+Maintainer-tested combinations. This is a record of what has actually been checked, not a
+guarantee that other hardware will work.
+
+### Systems
+
+| Release | Platform | Tested on |
+|---|---|---|
+| v1.0 | Linux | KDE Neon |
+| v1.0 | Windows | Wine 9.0 |
+| v1.0 | Android | Galaxy S25 Ultra |
+| v1.0 | Android | Galaxy A11+ |
+| `v20261127-c4-viewport-movement` | Android | Retroid Pocket Duo (top screen) |
+| `v20261127-c4-viewport-movement` | Android | AYN Odin 2 Portal |
+
+### Gamepads
+
+| Gamepad | Connection | Tested with |
+|---|---|---|
+| 8BitDo Ultimate 2 | Bluetooth + USB 2.4 GHz dongle | v1.0 |
+| 8BitDo SN30 Pro | Bluetooth | v1.0 |
+| 8BitDo Ultimate MG | Bluetooth | v1.0 |
+| Retroid Pocket Controller | USB wired | Retroid Pocket Duo, C4 |
+| Odin Controller | USB wired | AYN Odin 2 Portal, C4 |
+
 ## Layout
 
 | Path | Purpose |

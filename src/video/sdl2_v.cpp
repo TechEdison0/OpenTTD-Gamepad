@@ -765,6 +765,7 @@ _shift_pressed = _shift_pressed || gamepad_shift;
 #endif
 }
 
+#ifdef __ANDROID__
 /** Capture the mouse pointer while the cursor is fixed (scrolling), as Android cannot warp the pointer back. */
 void VideoDriver_SDL_Base::SyncPointerCapture()
 {
